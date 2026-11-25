@@ -32,6 +32,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const propTextSize = document.getElementById('prop-text-size');
   const propTextColor = document.getElementById('prop-text-color');
 
+  // Switch & Multimeter & Simulation UI Elements
+  const btnToggleSim = document.getElementById('btn-toggle-sim');
+  const simBtnIcon = document.getElementById('sim-btn-icon');
+  const simBtnText = document.getElementById('sim-btn-text');
+
+  const propSwitchGroup = document.getElementById('prop-switch-group');
+  const btnToggleSwitchProp = document.getElementById('btn-toggle-switch-prop');
+  const propSwitchIcon = document.getElementById('prop-switch-icon');
+  const propSwitchStatus = document.getElementById('prop-switch-status');
+
+  const propMultimeterGroup = document.getElementById('prop-multimeter-group');
+  const propMultimeterMode = document.getElementById('prop-multimeter-mode');
+  const propDmmDisplayBadge = document.getElementById('prop-dmm-display-badge');
+
+  const propLabelPosGroup = document.getElementById('prop-label-pos-group');
+  const propLabelRotBadge = document.getElementById('prop-label-rot-badge');
+  const btnPosTop = document.getElementById('btn-pos-top');
+  const btnPosBottom = document.getElementById('btn-pos-bottom');
+  const btnPosLeft = document.getElementById('btn-pos-left');
+  const btnPosRight = document.getElementById('btn-pos-right');
+  const btnPosReset = document.getElementById('btn-pos-reset');
+  const btnRotateLabel = document.getElementById('btn-rotate-label');
+  const propLabelOffsetX = document.getElementById('prop-label-offset-x');
+  const propLabelOffsetY = document.getElementById('prop-label-offset-y');
+
   const analysisPreview = document.getElementById('analysis-preview');
   const toastEl = document.getElementById('toast-msg');
 
@@ -54,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (propDirGroup) propDirGroup.style.display = 'none';
       if (propSignGroup) propSignGroup.style.display = 'none';
       if (propTextGroup) propTextGroup.style.display = 'none';
+      if (propSwitchGroup) propSwitchGroup.style.display = 'none';
+      if (propMultimeterGroup) propMultimeterGroup.style.display = 'none';
+      if (propLabelPosGroup) propLabelPosGroup.style.display = 'none';
 
       if (wire.curved && propCurveGroup && propCurve) {
         propCurveGroup.style.display = 'block';
@@ -74,6 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (propDirGroup) propDirGroup.style.display = 'none';
       if (propSignGroup) propSignGroup.style.display = 'none';
       if (propCurveGroup) propCurveGroup.style.display = 'none';
+      if (propSwitchGroup) propSwitchGroup.style.display = 'none';
+      if (propMultimeterGroup) propMultimeterGroup.style.display = 'none';
+      if (propLabelPosGroup) propLabelPosGroup.style.display = 'none';
 
       if (propTextGroup) {
         propTextGroup.style.display = 'block';
@@ -92,6 +123,46 @@ document.addEventListener('DOMContentLoaded', () => {
     if (propLabelGroup) propLabelGroup.style.display = 'flex';
     if (propLabel) propLabel.value = el.label || '';
     if (propCurveGroup) propCurveGroup.style.display = 'none';
+
+    // Pengaturan Posisi & Rotasi Teks Label Komponen
+    if (propLabelPosGroup) {
+      if (['resistor', 'capacitor', 'inductor', 'vsource_dc', 'vsource_ac', 'isource_dc', 'ground', 'switch', 'multimeter'].includes(el.type)) {
+        propLabelPosGroup.style.display = 'block';
+        if (propLabelOffsetX) propLabelOffsetX.value = el.labelOffsetX || 0;
+        if (propLabelOffsetY) propLabelOffsetY.value = el.labelOffsetY || 0;
+        if (propLabelRotBadge) propLabelRotBadge.textContent = 'Rotasi: ' + (el.labelRotation || 0) + '°';
+      } else {
+        propLabelPosGroup.style.display = 'none';
+      }
+    }
+
+    // Saklar (Switch)
+    if (propSwitchGroup) {
+      if (el.type === 'switch') {
+        propSwitchGroup.style.display = 'block';
+        const isClosed = el.closed || el.value === 'Closed';
+        if (propSwitchIcon) propSwitchIcon.textContent = isClosed ? '⚡' : '🔌';
+        if (propSwitchStatus) propSwitchStatus.textContent = isClosed ? 'Buka Saklar (OFF)' : 'Tutup Saklar (ON)';
+        if (btnToggleSwitchProp) {
+          btnToggleSwitchProp.style.background = isClosed ? '#dc2626' : 'var(--primary)';
+        }
+      } else {
+        propSwitchGroup.style.display = 'none';
+      }
+    }
+
+    // Multimeter Digital (DMM)
+    if (propMultimeterGroup) {
+      if (el.type === 'multimeter') {
+        propMultimeterGroup.style.display = 'block';
+        if (propMultimeterMode) propMultimeterMode.value = el.meterMode || 'voltage_dc';
+        if (propDmmDisplayBadge) {
+          propDmmDisplayBadge.textContent = el.displayReading || (circuit && circuit.isSimulating ? '0.00 V' : '--.--');
+        }
+      } else {
+        propMultimeterGroup.style.display = 'none';
+      }
+    }
 
     // Field value komponen
     if (propValueGroup && propValue) {
@@ -146,6 +217,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Handler callback saat status simulasi berubah
+  function handleSimulationChange(isSimulating, results) {
+    if (btnToggleSim) {
+      if (isSimulating) {
+        btnToggleSim.style.background = '#fee2e2';
+        btnToggleSim.style.borderColor = '#ef4444';
+        btnToggleSim.style.color = '#991b1b';
+        if (simBtnIcon) simBtnIcon.textContent = '⏹️';
+        if (simBtnText) simBtnText.textContent = 'Mode Simulasi: ON';
+      } else {
+        btnToggleSim.style.background = '#ecfdf5';
+        btnToggleSim.style.borderColor = '#10b981';
+        btnToggleSim.style.color = '#065f46';
+        if (simBtnIcon) simBtnIcon.textContent = '▶️';
+        if (simBtnText) simBtnText.textContent = 'Mode Simulasi: OFF';
+      }
+    }
+
+    if (circuit?.selectedItem?.type === 'element') {
+      const el = circuit.selectedItem.item;
+      if (el.type === 'multimeter' && propDmmDisplayBadge) {
+        propDmmDisplayBadge.textContent = el.displayReading || (isSimulating ? '0.00 V' : '--.--');
+      }
+    }
+  }
+
   // Inisialisasi Canvas Engine
   const zoomIndicator = document.getElementById('zoom-indicator');
 
@@ -153,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gridSize: 20,
     onSelectionChange: handleSelectionChange,
     onCircuitChange: handleCircuitChange,
+    onSimulationChange: handleSimulationChange,
     onCurveChange: (offset) => {
       if (propCurve) propCurve.value = offset;
       if (propCurveVal) propCurveVal.textContent = (offset > 0 ? '+' : '') + offset + ' px';
@@ -371,6 +469,101 @@ document.addEventListener('DOMContentLoaded', () => {
       circuit.saveState(false);
       circuit.render();
     }
+  });
+
+  // --- TOGGLE SIMULASI RANGKAIAN (MNA DC SOLVER) ---
+  btnToggleSim?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!circuit) return;
+    const isSim = circuit.toggleSimulation();
+    showToast(isSim ? 'Mode Simulasi Aktif: Perhitungan DC Berjalan' : 'Mode Simulasi Non-Aktif: Mode Desain / Skema');
+  });
+
+  // --- SAKLAR TOGGLE LISTENER ---
+  btnToggleSwitchProp?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (circuit?.selectedItem?.type === 'element' && circuit.selectedItem.item.type === 'switch') {
+      circuit.toggleSwitch(circuit.selectedItem.item);
+    }
+  });
+
+  // --- MULTIMETER MODE LISTENER ---
+  propMultimeterMode?.addEventListener('change', () => {
+    if (circuit?.selectedItem?.type === 'element' && circuit.selectedItem.item.type === 'multimeter') {
+      circuit.selectedItem.item.meterMode = propMultimeterMode.value;
+      circuit.saveState(false);
+      if (circuit.isSimulating) {
+        circuit.runSimulation();
+      } else {
+        circuit.render();
+      }
+      handleSelectionChange(circuit.selectedItem);
+    }
+  });
+
+  // --- POSISI & ROTASI TEKS LABEL KOMPONEN ---
+  function updateElementLabelPosition(dx, dy, rot) {
+    if (!circuit?.selectedItem || circuit.selectedItem.type !== 'element') return;
+    const el = circuit.selectedItem.item;
+    if (dx !== null) el.labelOffsetX = dx;
+    if (dy !== null) el.labelOffsetY = dy;
+    if (rot !== null) el.labelRotation = rot;
+
+    if (propLabelOffsetX) propLabelOffsetX.value = el.labelOffsetX || 0;
+    if (propLabelOffsetY) propLabelOffsetY.value = el.labelOffsetY || 0;
+    if (propLabelRotBadge) propLabelRotBadge.textContent = 'Rotasi: ' + (el.labelRotation || 0) + '°';
+
+    circuit.saveState(false);
+    circuit.render();
+  }
+
+  btnPosTop?.addEventListener('click', (e) => {
+    e.preventDefault();
+    updateElementLabelPosition(0, -24, null);
+  });
+
+  btnPosBottom?.addEventListener('click', (e) => {
+    e.preventDefault();
+    updateElementLabelPosition(0, 24, null);
+  });
+
+  btnPosLeft?.addEventListener('click', (e) => {
+    e.preventDefault();
+    updateElementLabelPosition(-32, 0, null);
+  });
+
+  btnPosRight?.addEventListener('click', (e) => {
+    e.preventDefault();
+    updateElementLabelPosition(32, 0, null);
+  });
+
+  btnPosReset?.addEventListener('click', (e) => {
+    e.preventDefault();
+    updateElementLabelPosition(0, 0, 0);
+  });
+
+  btnRotateLabel?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!circuit?.selectedItem || circuit.selectedItem.type !== 'element') return;
+    const el = circuit.selectedItem.item;
+    const nextRot = ((el.labelRotation || 0) + 90) % 360;
+    updateElementLabelPosition(null, null, nextRot);
+  });
+
+  propLabelOffsetX?.addEventListener('input', () => {
+    if (!circuit?.selectedItem || circuit.selectedItem.type !== 'element') return;
+    const val = parseInt(propLabelOffsetX.value, 10) || 0;
+    circuit.selectedItem.item.labelOffsetX = val;
+    circuit.saveState(false);
+    circuit.render();
+  });
+
+  propLabelOffsetY?.addEventListener('input', () => {
+    if (!circuit?.selectedItem || circuit.selectedItem.type !== 'element') return;
+    const val = parseInt(propLabelOffsetY.value, 10) || 0;
+    circuit.selectedItem.item.labelOffsetY = val;
+    circuit.saveState(false);
+    circuit.render();
   });
 
   // --- ACTIONS: SALIN KE WORD (CLIPBOARD), SALIN ANALISIS, UNDUH PNG ---

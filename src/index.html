@@ -93,12 +93,15 @@
           <button class="btn-tool" data-tool="switch" title="Saklar. Tekan 'R' untuk putar 90°.">
             <span>⚲</span> Saklar
           </button>
+          <button class="btn-tool" data-tool="multimeter" title="Multimeter Digital (Ukur Volt, Ampere, Ohm). Tekan 'R' untuk putar 90°.">
+            <span>📟</span> Multimeter
+          </button>
         </div>
       </div>
 
       <!-- Row 3: Preset Contoh Rangkaian & Tombol Aksi Cepat -->
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Contoh:</span>
           <select id="preset-select" class="form-select" style="padding: 3px 6px; font-size: 11px;">
             <option value="twoLoopCircuit">Analisis 2-Loop (Kirchhoff)</option>
@@ -106,6 +109,9 @@
             <option value="wheatstoneBridge">Jembatan Wheatstone</option>
             <option value="">-- Kanvas Bersih --</option>
           </select>
+          <button id="btn-toggle-sim" class="btn-tool" style="background: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 600; padding: 3px 8px;" title="Jalankan / Hentikan Simulasi Rangkaian Nyata">
+            <span id="sim-btn-icon">▶️</span> <span id="sim-btn-text">Mode Simulasi: OFF</span>
+          </button>
         </div>
 
         <div style="display: flex; gap: 4px;">
@@ -185,6 +191,55 @@
           </div>
         </div>
 
+        <!-- Khusus Saklar (Switch) -->
+        <div id="prop-switch-group" class="form-group" style="display: none; grid-column: 1 / -1;">
+          <label>Status Saklar:</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+            <button id="btn-toggle-switch-prop" class="btn-primary" style="padding: 5px 12px; font-size: 11px;">
+              <span id="prop-switch-icon">🔌</span> <span id="prop-switch-status">Tutup Saklar (ON)</span>
+            </button>
+            <span style="font-size: 11px; color: var(--text-muted);">(Bisa dobel-klik saklar di kanvas atau tekan 'Space')</span>
+          </div>
+        </div>
+
+        <!-- Khusus Multimeter Digital (DMM) -->
+        <div id="prop-multimeter-group" class="form-group" style="display: none; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label for="prop-multimeter-mode">Mode Pengukuran Multimeter:</label>
+            <div id="prop-dmm-display-badge" style="font-family: monospace; font-weight: bold; background: #0f172a; color: #4ade80; padding: 2px 8px; border-radius: 4px; font-size: 13px;">--.--</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+            <select id="prop-multimeter-mode" class="form-select" style="flex: 1; min-width: 150px;">
+              <option value="voltage_dc">Voltmeter DC (V = V+ - V-)</option>
+              <option value="current_dc">Amperemeter DC (I seri, probe merah ke hitam)</option>
+              <option value="resistance">Ohmmeter (Resistansi ekuivalen Ω)</option>
+              <option value="voltage_ac">Voltmeter AC (RMS V~)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Posisi & Rotasi Teks Komponen (Tetap Melekat pada Komponen) -->
+        <div id="prop-label-pos-group" class="form-group" style="display: none; grid-column: 1 / -1; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-weight: 600; font-size: 11px; color: var(--text-main);">📍 Posisi & Rotasi Teks Label:</label>
+            <span id="prop-label-rot-badge" style="font-size: 10px; color: var(--text-muted);">Rotasi: 0°</span>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center; margin-top: 5px; flex-wrap: wrap;">
+            <button id="btn-pos-top" class="btn-tool" style="padding: 2px 7px; font-size: 10px;" title="Pindah Label ke Atas">⬆️ Atas</button>
+            <button id="btn-pos-bottom" class="btn-tool" style="padding: 2px 7px; font-size: 10px;" title="Pindah Label ke Bawah">⬇️ Bawah</button>
+            <button id="btn-pos-left" class="btn-tool" style="padding: 2px 7px; font-size: 10px;" title="Pindah Label ke Kiri">⬅️ Kiri</button>
+            <button id="btn-pos-right" class="btn-tool" style="padding: 2px 7px; font-size: 10px;" title="Pindah Label ke Kanan">➡️ Kanan</button>
+            <button id="btn-pos-reset" class="btn-tool" style="padding: 2px 7px; font-size: 10px;" title="Reset Posisi Label ke Standar">↺ Reset</button>
+            <button id="btn-rotate-label" class="btn-tool" style="padding: 2px 7px; font-size: 10px;" title="Putar Orientasi Teks 90 Derajat">🔄 Putar Teks (90°)</button>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 6px; font-size: 10px; color: var(--text-muted); align-items: center;">
+            <span>Geser X:</span>
+            <input type="range" id="prop-label-offset-x" min="-60" max="60" step="2" value="0" style="flex: 1;">
+            <span>Geser Y:</span>
+            <input type="range" id="prop-label-offset-y" min="-60" max="60" step="2" value="0" style="flex: 1;">
+          </div>
+        </div>
+
         <!-- Khusus Teks Bebas / LaTeX -->
         <div id="prop-text-group" class="form-group" style="display: none; grid-column: 1 / -1;">
           <label for="prop-text-content">Isi Teks / Rumus Matematika (Mendukung LaTeX $...$):</label>
@@ -243,6 +298,7 @@
 
   <!-- Scripts -->
   <script src="js/latex-renderer.js"></script>
+  <script src="js/circuit-solver.js"></script>
   <script src="js/circuit-canvas.js"></script>
   <script src="js/equation-helper.js"></script>
   <script src="js/presets.js"></script>

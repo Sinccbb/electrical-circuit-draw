@@ -56,6 +56,11 @@ class CircuitCanvas {
     this.onToolChange = options.onToolChange || null;
     this.onZoomChange = options.onZoomChange || null;
     this.onCurveChange = options.onCurveChange || null;
+    this.onSimulationChange = options.onSimulationChange || null;
+
+    // Simulation Engine State
+    this.isSimulating = false;
+    this.simulationResults = null;
 
     // Terminal Port Snapping & Wire Dynamic Binding (draw.io style)
     this.wireStartBinding = null;
@@ -268,6 +273,11 @@ class CircuitCanvas {
         return [
           toWorld(-30, 0, 't1'),
           toWorld(30, 0, 't2')
+        ];
+      case 'multimeter':
+        return [
+          toWorld(-30, 10, 'probe_red'),
+          toWorld(30, 10, 'probe_black')
         ];
       case 'ground':
         return [
@@ -700,11 +710,17 @@ class CircuitCanvas {
         this.render();
         return;
       }
-      if (this.selectedItem && this.selectedItem.type === 'element' && this.selectedItem.item.type === 'text') {
-        const textInput = document.getElementById('prop-text-content');
-        if (textInput) {
-          textInput.focus();
-          textInput.select();
+      if (this.selectedItem && this.selectedItem.type === 'element') {
+        if (this.selectedItem.item.type === 'switch') {
+          this.toggleSwitch(this.selectedItem.item);
+          return;
+        }
+        if (this.selectedItem.item.type === 'text') {
+          const textInput = document.getElementById('prop-text-content');
+          if (textInput) {
+            textInput.focus();
+            textInput.select();
+          }
         }
       }
     });
@@ -715,11 +731,18 @@ class CircuitCanvas {
         return;
       }
 
-      // Spacebar hold untuk Pan
-      if (e.code === 'Space' && !this.spacePressed) {
-        e.preventDefault();
-        this.spacePressed = true;
-        this.updateCursor();
+      // Spacebar: Toggle Saklar jika saklar sedang dipilih, atau hold untuk Pan kanvas
+      if (e.code === 'Space') {
+        if (this.selectedItem && this.selectedItem.type === 'element' && this.selectedItem.item.type === 'switch') {
+          e.preventDefault();
+          this.toggleSwitch(this.selectedItem.item);
+          return;
+        }
+        if (!this.spacePressed) {
+          e.preventDefault();
+          this.spacePressed = true;
+          this.updateCursor();
+        }
       }
 
       // Tombol 'R': Rotasi 90 Derajat
@@ -839,28 +862,50 @@ class CircuitCanvas {
 
     switch (type) {
       case 'resistor':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$R_' + (this.countType('resistor') + 1) + '$', value: '$10\\ \\Omega$' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$R_' + (this.countType('resistor') + 1) + '$', value: '$10\\ \\Omega$', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'capacitor':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$C_' + (this.countType('capacitor') + 1) + '$', value: '$100\\ \\mu\\text{F}$' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$C_' + (this.countType('capacitor') + 1) + '$', value: '$100\\ \\mu\\text{F}$', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'inductor':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$L_' + (this.countType('inductor') + 1) + '$', value: '$10\\ \\text{mH}$' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$L_' + (this.countType('inductor') + 1) + '$', value: '$10\\ \\text{mH}$', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'vsource_dc':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$V_' + (this.countType('vsource_dc') + 1) + '$', value: '$12\\ \\text{V}$' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$V_' + (this.countType('vsource_dc') + 1) + '$', value: '$12\\ \\text{V}$', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'vsource_ac':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$V_{s' + (this.countType('vsource_ac') + 1) + '}$', value: '$220\\ \\text{V}$' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$V_{s' + (this.countType('vsource_ac') + 1) + '}$', value: '$220\\ \\text{V}$', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'isource_dc':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$I_' + (this.countType('isource_dc') + 1) + '$', value: '$2\\ \\text{A}$' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$I_' + (this.countType('isource_dc') + 1) + '$', value: '$2\\ \\text{A}$', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'ground':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: 'GND', value: '' };
+        newItem = { id, type, x, y, rotation: this.placementRotation, label: 'GND', value: '', labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0 };
         break;
       case 'switch':
-        newItem = { id, type, x, y, rotation: this.placementRotation, label: '$S_' + (this.countType('switch') + 1) + '$', value: 'Open' };
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: '$S_' + (this.countType('switch') + 1) + '$',
+          value: 'Open',
+          closed: false,
+          labelOffsetX: 0,
+          labelOffsetY: 0,
+          labelRotation: 0
+        };
+        break;
+      case 'multimeter':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'DMM ' + (this.countType('multimeter') + 1),
+          value: '',
+          meterMode: 'voltage_dc',
+          displayReading: this.isSimulating ? '0.00 V' : '--.--',
+          labelOffsetX: 0,
+          labelOffsetY: 0,
+          labelRotation: 0
+        };
         break;
       case 'node':
         newItem = { id, type, x, y, rotation: 0, label: '', value: '' };
@@ -989,6 +1034,17 @@ class CircuitCanvas {
         const halfW = Math.max(20, cleanLen * (fontSize * 0.35) + 12);
         const halfH = fontSize * 0.9;
         if (Math.abs(x - el.x) <= halfW && Math.abs(y - el.y) <= halfH) {
+          return { type: 'element', item: el };
+        }
+      } else if (el.type === 'multimeter') {
+        const rad = ((el.rotation || 0) * Math.PI) / 180;
+        const cos = Math.cos(-rad);
+        const sin = Math.sin(-rad);
+        const dx = x - el.x;
+        const dy = y - el.y;
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+        if (Math.abs(lx) <= 36 && Math.abs(ly) <= 30) {
           return { type: 'element', item: el };
         }
       } else {
@@ -1206,6 +1262,35 @@ class CircuitCanvas {
     this.drawTerminalPorts(ctx);
 
     ctx.restore();
+
+    // 7. Status HUD Simulasi (di pojok kanvas dalam koordinat layar)
+    if (this.isSimulating) {
+      ctx.save();
+      const isSolved = this.simulationResults && this.simulationResults.solved;
+      const statusText = isSolved ? '● SIMULASI AKTIF (DC)' : '▲ SIMULASI: Rangkaian Terbuka';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const textW = ctx.measureText(statusText).width;
+      const boxW = textW + 20;
+      const boxH = 24;
+
+      ctx.fillStyle = isSolved ? 'rgba(236, 253, 245, 0.95)' : 'rgba(254, 243, 199, 0.95)';
+      ctx.strokeStyle = isSolved ? '#10b981' : '#f59e0b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(12, 12, boxW, boxH, 6);
+      } else {
+        ctx.rect(12, 12, boxW, boxH);
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = isSolved ? '#065f46' : '#92400e';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.fillText(statusText, 22, 12 + boxH / 2);
+      ctx.restore();
+    }
   }
 
   drawElement(ctx, el, isSelected) {
@@ -1236,7 +1321,10 @@ class CircuitCanvas {
         this.drawGround(ctx, el);
         break;
       case 'switch':
-        this.drawSwitch(ctx, el);
+        this.drawSwitch(ctx, el, isSelected);
+        break;
+      case 'multimeter':
+        this.drawMultimeter(ctx, el, isSelected);
         break;
       case 'node':
         this.drawNode(ctx, el);
@@ -1290,6 +1378,25 @@ class CircuitCanvas {
     }
   }
 
+  drawComponentLabel(ctx, el, defaultX, defaultY, customOpts = {}) {
+    if (!el.label && !el.value) return;
+    const ox = (el.labelOffsetX !== undefined) ? el.labelOffsetX : 0;
+    const oy = (el.labelOffsetY !== undefined) ? el.labelOffsetY : 0;
+    const rot = (el.labelRotation !== undefined) ? el.labelRotation : 0;
+    const posX = defaultX + ox;
+    const posY = defaultY + oy;
+
+    if (rot !== 0) {
+      ctx.save();
+      ctx.translate(posX, posY);
+      ctx.rotate((rot * Math.PI) / 180);
+      this.drawLabel(ctx, el.label, el.value, 0, 0, customOpts);
+      ctx.restore();
+    } else {
+      this.drawLabel(ctx, el.label, el.value, posX, posY, customOpts);
+    }
+  }
+
   drawResistor(ctx, el) {
     ctx.beginPath();
     ctx.moveTo(-30, 0);
@@ -1302,7 +1409,7 @@ class CircuitCanvas {
     ctx.lineTo(30, 0);
     ctx.stroke();
 
-    this.drawLabel(ctx, el.label, el.value, 0, -16);
+    this.drawComponentLabel(ctx, el, 0, -16);
   }
 
   drawCapacitor(ctx, el) {
@@ -1318,7 +1425,7 @@ class CircuitCanvas {
     ctx.lineTo(30, 0);
     ctx.stroke();
 
-    this.drawLabel(ctx, el.label, el.value, 0, -18);
+    this.drawComponentLabel(ctx, el, 0, -18);
   }
 
   drawInductor(ctx, el) {
@@ -1340,7 +1447,7 @@ class CircuitCanvas {
     ctx.lineTo(30, 0);
     ctx.stroke();
 
-    this.drawLabel(ctx, el.label, el.value, 0, -15);
+    this.drawComponentLabel(ctx, el, 0, -15);
   }
 
   drawVSourceDC(ctx, el) {
@@ -1373,7 +1480,7 @@ class CircuitCanvas {
     ctx.fillText('+', -12, -10);
     ctx.fillText('-', 12, -8);
 
-    this.drawLabel(ctx, el.label, el.value, 0, -22);
+    this.drawComponentLabel(ctx, el, 0, -22);
   }
 
   drawVSourceAC(ctx, el) {
@@ -1394,7 +1501,7 @@ class CircuitCanvas {
     ctx.bezierCurveTo(4, 8, 4, 8, 8, 0);
     ctx.stroke();
 
-    this.drawLabel(ctx, el.label, el.value, 0, -22);
+    this.drawComponentLabel(ctx, el, 0, -22);
   }
 
   drawISourceDC(ctx, el) {
@@ -1415,7 +1522,7 @@ class CircuitCanvas {
     ctx.stroke();
     this.drawArrowHead(ctx, -10, 0, 10, 0, 6);
 
-    this.drawLabel(ctx, el.label, el.value, 0, -22);
+    this.drawComponentLabel(ctx, el, 0, -22);
   }
 
   drawGround(ctx, el) {
@@ -1430,10 +1537,16 @@ class CircuitCanvas {
     ctx.lineTo(4, 10);
     ctx.stroke();
 
-    this.drawLabel(ctx, el.label, '', 0, 18);
+    this.drawComponentLabel(ctx, el, 0, 18);
   }
 
-  drawSwitch(ctx, el) {
+  drawSwitch(ctx, el, isSelected) {
+    const isClosed = el.closed || el.value === 'Closed' || el.state === 'closed';
+
+    ctx.save();
+    // Terminal kabel kiri dan kanan
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = isSelected ? '#2563eb' : '#0f172a';
     ctx.beginPath();
     ctx.moveTo(-30, 0);
     ctx.lineTo(-12, 0);
@@ -1441,17 +1554,182 @@ class CircuitCanvas {
     ctx.lineTo(30, 0);
     ctx.stroke();
 
+    // Kontak lingkaran kiri dan kanan
+    ctx.lineWidth = 2.0;
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(-12, 0, 3, 0, Math.PI * 2);
-    ctx.arc(12, 0, 3, 0, Math.PI * 2);
+    ctx.arc(-12, 0, 3.5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(-10, 0);
-    ctx.lineTo(10, -12);
+    ctx.arc(12, 0, 3.5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.stroke();
 
-    this.drawLabel(ctx, el.label, el.value, 0, -18);
+    // Tuas Saklar Interaktif
+    ctx.beginPath();
+    if (isClosed) {
+      // Tertutup (ON) - Tuas tebal mendatar menghubungkan kontak
+      ctx.lineWidth = 3.2;
+      ctx.strokeStyle = '#16a34a';
+      ctx.moveTo(-12, 0);
+      ctx.lineTo(12, 0);
+      ctx.stroke();
+
+      // Badge teks ON kecil
+      ctx.fillStyle = '#16a34a';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ON', 0, 14);
+    } else {
+      // Terbuka (OFF) - Tuas terangkat miring 30 derajat
+      ctx.lineWidth = 2.6;
+      ctx.strokeStyle = isSelected ? '#2563eb' : '#dc2626';
+      ctx.moveTo(-12, 0);
+      ctx.lineTo(10, -14);
+      ctx.stroke();
+
+      // Badge teks OFF kecil
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('OFF', 0, 14);
+    }
+    ctx.restore();
+
+    this.drawComponentLabel(ctx, el, 0, -20);
+  }
+
+  drawMultimeter(ctx, el, isSelected) {
+    ctx.save();
+
+    const w = 62;
+    const h = 50;
+    const x = -w / 2;
+    const y = -h / 2;
+    const r = 8;
+
+    // Bezel Bodi Kuning DMM
+    ctx.fillStyle = isSelected ? '#fbbf24' : '#f59e0b';
+    ctx.strokeStyle = isSelected ? '#2563eb' : '#b45309';
+    ctx.lineWidth = isSelected ? 2.5 : 1.8;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Layar LCD Digital
+    const lcdW = 50;
+    const lcdH = 18;
+    const lcdX = -lcdW / 2;
+    const lcdY = y + 6;
+
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(lcdX, lcdY, lcdW, lcdH, 3);
+    } else {
+      ctx.rect(lcdX, lcdY, lcdW, lcdH);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Mode LCD (Kiri atas)
+    const mode = el.meterMode || 'voltage_dc';
+    let modeBadge = 'DC V';
+    if (mode === 'current_dc') modeBadge = 'DC A';
+    else if (mode === 'resistance') modeBadge = 'OHM';
+    else if (mode === 'voltage_ac') modeBadge = 'AC V';
+
+    ctx.font = 'bold 7px sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(modeBadge, lcdX + 3, lcdY + 2);
+
+    // Nilai Angka LCD Digital (Digital Green)
+    const reading = el.displayReading || (this.isSimulating ? '0.00 V' : '--.--');
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#4ade80';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(reading, lcdX + lcdW - 3, lcdY + lcdH - 1);
+
+    // Rotary Dial Knob di tengah bawah
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, y + 31, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    let dialAngle = -Math.PI / 4;
+    if (mode === 'current_dc') dialAngle = 0;
+    else if (mode === 'resistance') dialAngle = Math.PI / 4;
+    else if (mode === 'voltage_ac') dialAngle = -3 * Math.PI / 4;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, y + 31);
+    ctx.lineTo(4 * Math.cos(dialAngle), y + 31 + 4 * Math.sin(dialAngle));
+    ctx.stroke();
+
+    // Socket Terminal Probe:
+    // Probe Merah V/Ω (+) di kiri (-20), Probe Hitam COM (-) di kanan (+20)
+    const probeRedX = -20;
+    const probeBlackX = 20;
+    const probeY = y + 41;
+
+    // Terminal kiri ke world port (-30, 10)
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(probeRedX, probeY);
+    ctx.lineTo(-30, 10);
+    ctx.stroke();
+
+    // Terminal kanan ke world port (30, 10)
+    ctx.strokeStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(probeBlackX, probeY);
+    ctx.lineTo(30, 10);
+    ctx.stroke();
+
+    // Socket Jack Merah
+    ctx.fillStyle = '#dc2626';
+    ctx.strokeStyle = '#991b1b';
+    ctx.beginPath();
+    ctx.arc(probeRedX, probeY, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Socket Jack Hitam
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = '#334155';
+    ctx.beginPath();
+    ctx.arc(probeBlackX, probeY, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Teks '+' dan '-' kecil di atas socket
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillStyle = '#dc2626';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', probeRedX, probeY - 4);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText('−', probeBlackX, probeY - 4);
+
+    ctx.restore();
+
+    this.drawComponentLabel(ctx, el, 0, -32);
   }
 
   drawNode(ctx, el) {
@@ -1716,6 +1994,73 @@ class CircuitCanvas {
     }
 
     return exportCanvas.toDataURL('image/png');
+  }
+
+  // --- KONTROL SAKLAR INTERAKTIF (SWITCH) ---
+  toggleSwitch(switchEl) {
+    if (!switchEl) {
+      if (this.selectedItem && this.selectedItem.type === 'element' && this.selectedItem.item.type === 'switch') {
+        switchEl = this.selectedItem.item;
+      } else {
+        return;
+      }
+    }
+    if (switchEl.type !== 'switch') return;
+
+    switchEl.closed = !switchEl.closed;
+    switchEl.value = switchEl.closed ? 'Closed' : 'Open';
+    this.saveState();
+
+    if (this.isSimulating) {
+      this.runSimulation();
+    } else {
+      this.render();
+      if (this.onCircuitChange) this.onCircuitChange(this);
+    }
+
+    if (this.onSelectionChange) this.onSelectionChange(this.selectedItem);
+  }
+
+  // --- KONTROL SIMULASI RANGKAIAN LISTRIK ---
+  toggleSimulation(forceState) {
+    this.isSimulating = (forceState !== undefined) ? forceState : !this.isSimulating;
+    if (this.isSimulating) {
+      this.runSimulation();
+    } else {
+      this.simulationResults = null;
+      for (const el of this.elements) {
+        if (el.type === 'multimeter') {
+          el.displayReading = '--.--';
+        }
+      }
+      this.render();
+      if (this.onCircuitChange) this.onCircuitChange(this);
+    }
+
+    if (this.onSimulationChange) {
+      this.onSimulationChange(this.isSimulating, this.simulationResults);
+    }
+    return this.isSimulating;
+  }
+
+  runSimulation() {
+    if (typeof CircuitSolver === 'undefined') {
+      console.warn('CircuitSolver tidak ditemukan.');
+      return;
+    }
+
+    try {
+      this.simulationResults = CircuitSolver.solveCircuit(this);
+    } catch (err) {
+      console.warn('Gagal menghitung simulasi rangkaian:', err);
+      this.simulationResults = { solved: false, message: err.message };
+    }
+
+    this.render();
+    if (this.onCircuitChange) this.onCircuitChange(this);
+    if (this.onSimulationChange) {
+      this.onSimulationChange(this.isSimulating, this.simulationResults);
+    }
   }
 }
 

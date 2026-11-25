@@ -1,168 +1,120 @@
-# ⚡ CircuitLab Web
+# CircuitLab Web
 
-<p align="center">
-  <b>Editor Skema Rangkaian Listrik Interaktif & Analisis Hukum Kirchhoff Berbasis Web</b><br>
-  <i>Dilengkapi Rendering LaTeX Matematis Asli, Navigasi Pan & Zoom, dan Salin 1-Klik ke Microsoft Word / Google Docs</i>
-</p>
+Editor skema rangkaian listrik dan simulasi analisis berbasis web. Dirancang sederhana untuk membantu proses belajar, menggambar laporan tugas, corat-coret skema teori Kirchhoff, hingga simulasi perhitungan rangkaian nyata.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black" alt="JavaScript">
-  <img src="https://img.shields.io/badge/HTML5-Canvas%202D-E34F26?logo=html5&logoColor=white" alt="HTML5 Canvas">
-  <img src="https://img.shields.io/badge/LaTeX-Native%20Engine-008080?logo=latex&logoColor=white" alt="LaTeX Native">
-  <img src="https://img.shields.io/badge/Zero-Dependencies-brightgreen" alt="Zero Dependencies">
-  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License MIT">
-</p>
+Aplikasi ini berjalan murni di peramban (client-side) tanpa dependensi eksternal yang rumit, mendukung rumus matematika LaTeX secara langsung, dan memungkinkan diagram disalin dalam satu kali klik ke Microsoft Word atau Google Docs.
 
 ---
 
-## 📌 Tentang Proyek
+## Latar Belakang
 
-**CircuitLab Web** adalah aplikasi web ringan (*zero-dependency*) yang dirancang khusus untuk mahasiswa, dosen, dan pelajar teknik elektro maupun fisika. Aplikasi ini mempermudah penggambaran skema rangkaian listrik, perumusan asumsi arah arus cabang ($I_1, I_2, \dots$), lintasan loop KVL (*Kirchhoff's Voltage Law*), penandaan simpul KCL (*Kirchhoff's Current Law*), serta penyusunan persamaan matematis.
+Sering kali saat kita sedang mempelajari analisis rangkaian listrik—seperti hukum Kirchhoff (KCL dan KVL), analisis mesh, atau teorema Thevenin—kita membutuhkan media yang fleksibel. Di satu sisi, kita butuh ruang untuk corat-coret: memberi panah asumsi arah arus, menggambar lintasan loop tertutup, dan menuliskan persamaan dengan simbol-simbol fisika seperti $\Omega$, $\mu\text{F}$, atau indeks subskrip. Di sisi lain, kita juga butuh kepastian apakah hitungan kita sudah benar melalui simulasi nyata.
 
-Dengan fitur **1-Klik Salin ke Clipboard**, diagram rangkaian beresolusi tinggi (2x crisp retina) dapat langsung ditempelkan (**`Ctrl + V`**) ke **Microsoft Word**, **Google Docs**, **PowerPoint**, **Overleaf (LaTeX)**, maupun laporan praktikum tanpa perlu repot ekspor-impor berkas.
-
----
-
-## ✨ Fitur Utama
-
-### 1. 🔤 Rendering Rumus Matematika LaTeX 100% Native
-- Mendukung format penulisan LaTeX `$ ... $` pada nama komponen, nilai komponen, maupun label simpul dan teks keterangan bebas:
-  - Subskrip & Superskrip: `$R_1$`, `$C_{eq}$`, `$V_{th}$`, `$i_L(0^-)$`, `$v_C(0^+)$`
-  - Satuan & Simbol Yunani: `$10\ \Omega$`, `$100\ \mu\text{F}$`, `$2.5\ \text{mH}$`, `$12\ \text{V}$`
-  - Persamaan Matematika: `$v(t) = 100\cos(120\pi t + 45^\circ)\ \text{V}$`
-- **Tanpa CDN Eksternal**: Menggunakan engine tata letak vektor 2D langsung di HTML5 Canvas sehingga perenderan instan (0 ms), bebas jeda (*flicker-free*), dan tidak pernah hilang saat diekspor.
-
-### 2. 🎯 Alat Analisis Rangkaian Lengkap (Hukum Kirchhoff)
-- **Panah Asumsi Arah Arus ($I_1, I_2, \dots$)**: Tempatkan di cabang kawat mana pun dengan 4 arah (Kanan, Bawah, Kiri, Atas).
-- **Loop KVL ($\circlearrowright$ / $\circlearrowleft$)**: Tentukan arah lintasan mesh loop searah maupun berlawanan arah jarum jam.
-- **Simpul KCL ($V_A, V_B, \dots$)**: Titik acuan potensial simpul untuk analisis tegangan simpul (*Nodal Analysis*).
-- **Polaritas (+ / -)**: Tanda polaritas jatuh tegangan pada komponen pasif.
-- **Kawat Lengkung Fleksibel (Curved Wire / Jumper)**:
-  - Hubungkan dua simpul secara melengkung untuk menyederhanakan visualisasi simpul sepotensial (*equipotential node*).
-  - **Lengkung Fleksibel ke Atas & Bawah**: Klik dan geser titik bulat biru di tengah kawat langsung di kanvas, gunakan tombol inspector `↶ Atas` / `↷ Bawah`, atau tekan tombol **`R`** untuk membalik arah lengkungan.
-- **Teks Bebas (LaTeX)**: Tambahkan catatan kuliah, rumus ekivalen Thevenin/Norton, atau kondisi awal rangkaian.
-
-### 3. 🧲 Terminal Magnet Port & Sambungan Dinamis (Draw.io Style)
-- **Magnet Snap Ujung-ke-Ujung**: Saat menarik kawat mendekati ujung komponen (resistor, kapasitor, sumber tegangan, dll.), kursor otomatis mengunci (*snap*) tepat pada ujung kaki/terminal komponen (bukan di leher komponen!). Port terminal yang aktif akan menyala hijau dengan cincin visual.
-- **Kabel Otomatis Mengikut (*Dynamic Wire Binding*)**: Komponen yang sudah terhubung dengan kabel dapat digeser bebas atau diposisikan dengan tombol panah keyboard — kabel otomatis memanjang, memendek, dan mengikuti pergerakan komponen persis seperti di Draw.io!
-- **Rotasi Dinamis**: Saat komponen diputar dengan tombol **`R`**, kabel yang tersambung akan otomatis ikut berputar mengikuti orientasi terminal baru.
-
-### 4. 🔍 Kanvas Luas dengan Navigasi Pan & Zoom
-- **Geser Kanvas (Pan)**: Klik & tahan area kosong, tahan tombol `Spasi`, atau gunakan tombol roda mouse (*Middle Click*).
-- **Perbesar / Perkecil (Zoom)**: Putar roda mouse (*scroll*) terpusat pada posisi kursor, atau gunakan panel zoom mengambang (`−`, `100%`, `+`, `Fit`, `1:1`).
-- **Auto-Cropping Ekspor**: Gambar yang disalin atau diunduh otomatis di-crop rapi sesuai batas terluar komponen, menjaga diagram tetap berada di tengah tanpa ruang kosong yang berlebih.
-
-### 5. 📋 Integrasi Cepat ke Dokumen (Word / Docs)
-- **Tombol Salin Diagram (Ctrl+V)**: Memasukkan gambar berformat PNG transparan/putih tajam langsung ke *clipboard*. Buka Microsoft Word dan langsung tekan **`Ctrl + V`**.
-- **Salin Analisis**: Menyalin teks ringkasan perumusan KCL dan KVL dalam format rapi untuk disisipkan ke badan dokumen.
-- **Unduh PNG**: Simpan diagram ke komputer dengan satu klik.
+CircuitLab Web menggabungkan kedua kebutuhan tersebut ke dalam satu kanvas yang interaktif dan mudah dipakai.
 
 ---
 
-## 🚀 Panduan Menjalankan
+## Fitur Utama
 
-### Cara 1: Buka Langsung (Tanpa Instalasi)
-Anda dapat langsung membuka berkas `src/index.html` di browser modern mana pun (Google Chrome, Microsoft Edge, Firefox, Brave).
+### 1. Dua Mode Kerja: Corat-Coret Teori dan Simulasi Nyata
+Aplikasi ini menyediakan dua cara penggunaan yang bisa disesuaikan dengan kebutuhan:
+- **Mode Corat-Coret & Desain Teori**: Kamu bebas meletakkan komponen, menghubungkan kawat, memberi panah arah arus ($I_1, I_2, \dots$), menentukan arah loop KVL (searah atau berlawanan jarum jam), menandai polaritas tegangan ($+/-$), serta menambahkan catatan atau rumus matematika bebas.
+- **Mode Simulasi DC Interaktif**: Dengan menekan tombol *Mode Simulasi*, sistem perhitungan Modified Nodal Analysis (MNA) akan aktif. Tegangan tiap simpul dan arus cabang dihitung secara otomatis. Jika ada saklar yang dibuka atau ditutup, nilai-nilai tegangan dan arus langsung diperbarui seketika.
 
-### Cara 2: Menjalankan Local Server (Direkomendasikan)
-Menjalankan local server memastikan fitur Clipboard API berjalan tanpa pembatasan keamanan lokal:
+### 2. Saklar Interaktif (Switch ON / OFF)
+- Saklar memiliki status visual yang jelas: saat terbuka (OFF), tuas terangkat miring; saat tertutup (ON), tuas terhubung lurus mendatar dengan indikator hijau.
+- Kamu bisa mengubah kondisi saklar dengan memilih saklar lalu menekan tombol di panel properti, menekan tombol `Space` di papan ketik, atau cukup melakukan klik ganda pada saklar di kanvas.
+- Dalam mode simulasi, membuka atau menutup saklar langsung memutus atau mengalirkan arus listrik pada cabang tersebut.
 
-1. Pastikan **Node.js** telah terpasang di komputer Anda.
-2. Buka terminal pada folder proyek:
-   ```bash
-   git clone https://github.com/username/circuitlab-web.git
-   cd circuitlab-web
-   ```
-3. Jalankan server:
-   ```bash
-   npm start
-   ```
-   *(Atau di Windows, cukup klik dua kali berkas **`Buka-di-Browser.bat`**)*
-4. Buka peramban di: **`http://localhost:3000/index.html`**
+### 3. Multimeter Digital (DMM)
+Tersedia komponen multimeter digital dengan dua terminal probe: probe merah $(+)$ di sebelah kiri dan probe hitam COM $(-)$ di sebelah kanan. Multimeter ini dilengkapi rotary dial dan layar LCD digital yang menampilkan hasil pengukuran:
+- **Voltmeter DC**: Mengukur beda potensial antara kedua titik ($V_+ - V_-$).
+- **Amperemeter DC**: Mengukur arus yang mengalir melalui cabang saat multimeter dipasang secara seri.
+- **Ohmmeter**: Mengukur resistansi ekuivalen antara kedua terminal.
+- **Voltmeter AC**: Mengukur nilai tegangan efektif (RMS).
+
+### 4. Pengaturan Posisi dan Rotasi Teks Komponen
+- Posisi label maupun nilai komponen tidak kaku. Kamu bisa mengatur posisinya ke arah atas, bawah, kiri, kanan, atau menggunakan penggeser koordinat untuk penyesuaian yang lebih halus.
+- Orientasi teks juga bisa diputar ($0^\circ, 90^\circ, 180^\circ, 270^\circ$) agar tetap mudah dibaca saat komponen diputar vertikal.
+- Walaupun posisi dan rotasi teks diatur secara bebas, teks tetap terikat secara dinamis pada komponen induknya. Ketika komponen digeser ke bagian kanvas yang lain, teks akan selalu ikut berpindah bersama komponen tersebut.
+
+### 5. Sambungan Kawat Fleksibel (Draw.io Style)
+- **Koneksi Magnetik Ujung ke Ujung**: Saat mendekatkan ujung kawat ke komponen, kursor otomatis mengunci tepat pada terminal kaki komponen (bukan di tengah badan komponen).
+- **Kabel Mengikuti Komponen**: Begitu kawat tersambung ke terminal, kawat tersebut terikat secara permanen. Jika kamu menggeser resistor atau sumber tegangan, kabel yang terhubung akan otomatis memanjang, memendek, dan mengikuti pergerakan tersebut.
+- **Kawat Lengkung yang Fleksibel**: Kamu bisa menggunakan kawat melengkung untuk menghubungkan dua simpul yang sebenarnya sama tanpa memotong jalur kawat lainnya. Lengkungan bisa diarahkan ke atas maupun ke bawah, baik dengan menggeser titik kontrol biru di kanvas, melalui slider inspector, atau dengan menekan tombol `R`.
+
+### 6. Dukungan LaTeX Alami (Native Canvas)
+- Semua label, nilai komponen, dan teks bebas mendukung format penulisan LaTeX menggunakan tanda `$...$`.
+- Penulisan simbol seperti `$R_1$`, `$C_{eq}$`, `$V_{in}$`, `$10\ \Omega$`, `$100\ \mu\text{F}$`, hingga persamaan matematika seperti `$V_{th} = 12\ \text{V}$` dirender langsung menggunakan mesin tipografi vektor pada kanvas. Teks tampil tajam dan tidak akan hilang saat diekspor.
+
+### 7. Navigasi Kanvas yang Leluasa
+- **Menggeser Kanvas (Pan)**: Kamu bisa menggeser kanvas dengan klik dan tahan pada area kosong, menahan tombol `Spasi` sambil menggeser mouse, atau menggunakan klik roda tengah mouse.
+- **Perbesaran (Zoom)**: Gunakan roda gulir (scroll) mouse atau tombol navigasi di pojok kanan bawah (`+`, `−`, `Fit`, `1:1`) untuk melihat detail komponen atau memuat seluruh rangkaian ke layar.
+
+### 8. Integrasi Cepat ke Dokumen (Word dan Docs)
+- **Salin Diagram**: Klik tombol *Salin Diagram ke Word*, lalu tekan `Ctrl + V` di Microsoft Word, Google Docs, atau aplikasi pengolah kata lainnya. Gambar disalin dengan resolusi tinggi (2x crisp retina) dan terpotong rapi sesuai batas rangkaian (*auto-crop*).
+- **Salin Analisis**: Teks rangkuman perumusan KCL, KVL, dan status pengukuran sirkuit dapat disalin langsung ke badan tulisan laporan.
+- **Unduh PNG**: Kamu juga bisa menyimpan berkas gambar ke penyimpanan lokal komputer kapan saja.
 
 ---
 
-## ⌨️ Pintasan Keyboard & Mouse (*Shortcuts*)
+## Petunjuk Penggunaan Singkat
 
 | Tombol / Aksi | Fungsi |
-| :--- | :--- |
-| **Klik Kiri** | Memilih komponen / meletakkan alat yang sedang aktif |
-| **Klik Kanan** | Membatalkan penarikan kawat atau kembali ke alat **Pilih** |
-| **`R`** | Memutar komponen **90°** / memutar arah panah arus / membalik arah loop KVL |
-| **`←` `↑` `→` `↓`** | Menggeser posisi komponen/kawat terpilih per 1 unit grid |
-| **`Shift` + Panah** | Menggeser posisi mikro dengan presisi tinggi (5 px) |
-| **`Delete` / `Backspace`** | Menghapus komponen atau kawat yang sedang dipilih |
-| **`Ctrl` + `Z`** | Membatalkan perubahan (*Undo*) |
-| **`Ctrl` + `Y`** | Mengulangi perubahan (*Redo*) |
-| **Scroll Roda Mouse** | Zoom In / Zoom Out kanvas |
-| **Tahan Klik Kiri / Spasi** | Menggeser (*pan*) kanvas |
-| **Dobel Klik pada Teks** | Langsung mengedit isi teks/rumus di panel inspektor |
+|---|---|
+| **Klik Kiri** | Memilih komponen, menarik kawat, atau menaruh komponen |
+| **Klik Kanan** | Membatalkan penarikan kawat atau kembali ke alat pilih (Select) |
+| **Tombol `R`** | Memutar komponen $90^\circ$ sebelum ditaruh atau membalik arah kawat lengkung |
+| **Tombol `Space`** | Menahan untuk menggeser kanvas (atau membuka/menutup saklar yang sedang dipilih) |
+| **Tombol Panah** | Menggeser posisi komponen yang sedang dipilih secara presisi di atas grid |
+| **Scroll Mouse** | Memperbesar atau memperkecil tampilan kanvas (Zoom In / Zoom Out) |
+| **Klik Ganda Saklar** | Membuka atau menutup saklar secara langsung |
+| **`Ctrl + Z` / `Ctrl + Y`** | Membatalkan (Undo) atau mengulangi (Redo) tindakan terakhir |
 
 ---
 
-## 📐 Contoh Penulisan LaTeX yang Didukung
+## Menjalankan secara Mandiri
 
-Aplikasi ini memiliki parser LaTeX mandiri yang mendukung sintaks matematika penting:
+Karena proyek ini tidak membutuhkan instalasi dependensi yang rumit, kamu bisa menjalankannya dengan sangat mudah:
 
-| Kategori | Sintaks | Tampilan Hasil |
-| :--- | :--- | :--- |
-| **Subskrip** | `$R_1$`, `$C_{load}$`, `$V_{th}$` | $R_1$, $C_{load}$, $V_{th}$ |
-| **Superskrip** | `$x^2$`, `$e^{-t/\tau}$` | $x^2$, $e^{-t/\tau}$ |
-| **Simbol Yunani** | `$\Omega$`, `$\mu$`, `$\pi$`, `$\theta$`, `$\alpha$`, `$\omega$` | $\Omega$, $\mu$, $\pi$, $\theta$, $\alpha$, $\omega$ |
-| **Teks Tegak dalam Rumus** | `$\text{V}$`, `$\text{mA}$`, `$\text{mH}$` | $\text{V}$, $\text{mA}$, $\text{mH}$ |
-| **Spasi Matematika** | `$10\ \Omega$`, `$5\ \text{V}$` | Memberi jarak visual yang proporsional |
-| **Pecahan** | `$\frac{1}{2}$`, `$\frac{V}{R}$` | Menampilkan bentuk pecahan bertumpuk |
-| **Fungsi Matematika** | `$\sin$`, `$\cos$`, `$\tan$`, `$\ln$` | Nama fungsi dengan tipografi matematika |
+1. Unduh atau clone repositori ini ke komputer kamu:
+   ```bash
+   git clone https://github.com/username/electrical-circuit-draw.git
+   cd electrical-circuit-draw
+   ```
+2. Buka berkas `src/index.html` langsung di peramban favoritmu (Chrome, Edge, Firefox, dsb.), atau gunakan server statis sederhana jika ingin mengaksesnya melalui localhost:
+   ```bash
+   # Menggunakan Node.js
+   npx serve src
+
+   # Atau menggunakan Python
+   python -m http.server 3000 --directory src
+   ```
+3. Buka alamat `http://localhost:3000` pada peramban.
 
 ---
 
-## 📁 Struktur Berkas
+## Struktur Berkas
 
-```
-circuitlab-web/
+```text
+electrical-circuit-draw/
 ├── src/
-│   ├── index.html           # Struktur tampilan antarmuka web
 │   ├── css/
-│   │   └── style.css        # Tata letak responsif, tema modern & kanvas
+│   │   └── style.css            # Gaya visual antarmuka dan panel
 │   ├── js/
-│   │   ├── app.js              # Controller utama & event listener interaksi
-│   │   ├── circuit-canvas.js   # Mesin rendering skema rangkaian & grid
-│   │   ├── latex-renderer.js   # Mesin layout & rendering LaTeX native 2D
-│   │   ├── equation-helper.js  # Generator perumusan KCL & KVL otomatis
-│   │   ├── presets.js          # Contoh template rangkaian (Thevenin, Jembatan Wheatstone, dll.)
-│   │   └── clipboard-helper.js # Modul penyalinan gambar PNG & teks ke clipboard
-│   └── assets/
-│       └── icon.svg         # Ikon aplikasi
-├── Buka-di-Browser.bat      # Launcher praktis 1-klik untuk pengguna Windows
-├── server.js                # Local HTTP static server (Zero dependencies)
-├── package.json             # Konfigurasi proyek npm
-├── .gitignore               # Berkas yang diabaikan oleh Git
-└── README.md                # Dokumentasi lengkap proyek
+│   │   ├── app.js               # Pengendali utama antarmuka pengguna
+│   │   ├── circuit-canvas.js    # Mesin kanvas, rendering komponen, dan penanganan interaksi
+│   │   ├── circuit-solver.js    # Mesin simulasi rangkaian DC (Modified Nodal Analysis)
+│   │   ├── latex-renderer.js    # Mesin rendering formula LaTeX vektor pada HTML5 Canvas
+│   │   ├── equation-helper.js   # Generator rangkuman analisis KCL, KVL, dan simulasi
+│   │   ├── presets.js           # Contoh rangkaian awal (Divider, Wheatstone, 2-Loop)
+│   │   └── clipboard-helper.js  # Utilitas penyalinan diagram dan teks ke papan klip
+│   └── index.html               # Halaman utama aplikasi
+└── README.md                    # Dokumentasi proyek
 ```
 
 ---
 
-## 🛠️ Teknologi yang Digunakan
+## Lisensi
 
-- **HTML5 Canvas API (2D Context)**: Perenderan diagram vektor berkecepatan tinggi dengan skalabilitas resolusi (2x supersampling).
-- **Vanilla JavaScript (ES6+)**: Arsitektur modular tanpa ketergantungan framework (*Zero framework, zero runtime dependencies*).
-- **CSS3 Flexbox & Grid**: Desain antarmuka modern bernuansa *developer tools*.
-- **Async Clipboard API**: Integrasi transfer data gambar PNG biner langsung ke clipboard sistem operasi.
-
----
-
-## 🤝 Kontribusi
-
-Kontribusi selalu terbuka! Jika Anda ingin menambahkan komponen listrik baru (misal: Transistor BJT/MOSFET, Op-Amp, Transformator), silakan lakukan *Fork* repositori ini, buat *branch* fitur Anda, dan kirimkan *Pull Request*.
-
-1. *Fork* repositori ini
-2. Buat *feature branch* (`git checkout -b fitur-baru`)
-3. *Commit* perubahan Anda (`git commit -m 'Menambahkan komponen Op-Amp'`)
-4. *Push* ke *branch* (`git push origin fitur-baru`)
-5. Buat *Pull Request* baru
-
----
-
-## 📄 Lisensi
-
-Didistribusikan di bawah Lisensi **MIT**. Silakan gunakan secara bebas untuk keperluan belajar, mengajar, maupun pengembangan lebih lanjut.
+Proyek ini dirilis di bawah lisensi [MIT](LICENSE). Bebas digunakan, dipelajari, maupun dikembangkan lebih lanjut untuk keperluan akademis maupun personal.

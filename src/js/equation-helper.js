@@ -96,6 +96,43 @@ class EquationHelper {
     summaryText += `   - Resistor: Jika arah loop searah dengan asumsi arah arus, terjadi jatuh tegangan (- I × R).\n`;
     summaryText += `               Jika arah loop berlawanan dengan arah arus, bertanda (+ I × R).\n`;
 
+    // 6. HASIL SIMULASI RANGKAIAN (DC SIMULATION ENGINE)
+    if (canvas && canvas.isSimulating) {
+      summaryText += `\n6. HASIL SIMULASI RANGKAIAN DC INTERAKTIF:\n`;
+      summaryText += `   Status: ${canvas.simulationResults && canvas.simulationResults.solved ? 'Sirkuit Terhitung Normal (Solved)' : 'Sirkuit Belum Lengkap / Terbuka'}\n`;
+
+      const switches = elements.filter(e => e.type === 'switch');
+      if (switches.length > 0) {
+        summaryText += `   * Status Saklar: ` + switches.map(s => `${s.label}: ${s.closed ? 'TERTUTUP (ON / Closed)' : 'TERBUKA (OFF / Open)'}`).join(', ') + `\n`;
+      }
+
+      const multimeters = elements.filter(e => e.type === 'multimeter');
+      if (multimeters.length > 0) {
+        summaryText += `   * Pembacaan Multimeter Digital:\n`;
+        multimeters.forEach(m => {
+          const modeName = {
+            voltage_dc: 'Voltmeter DC',
+            current_dc: 'Amperemeter DC',
+            resistance: 'Ohmmeter',
+            voltage_ac: 'Voltmeter AC RMS'
+          }[m.meterMode] || m.meterMode;
+          summaryText += `     - ${m.label} [Mode: ${modeName}]: ${m.displayReading || '--.--'}\n`;
+        });
+      }
+
+      if (canvas.simulationResults && canvas.simulationResults.elements && typeof CircuitSolver !== 'undefined') {
+        summaryText += `   * Tegangan & Arus per Komponen:\n`;
+        for (const [id, res] of canvas.simulationResults.elements) {
+          const comp = elements.find(e => e.id === id);
+          if (comp && ['resistor', 'vsource_dc'].includes(comp.type)) {
+            const vStr = CircuitSolver.formatMeasurement(res.vDrop, 'V');
+            const iStr = CircuitSolver.formatMeasurement(res.current, 'A');
+            summaryText += `     - ${comp.label} (${comp.value || ''}): V = ${vStr}, I = ${iStr}\n`;
+          }
+        }
+      }
+    }
+
     return summaryText;
   }
 }
