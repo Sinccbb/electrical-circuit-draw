@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CircuitLab Web - Editor Rangkaian Listrik & Analisis Kirchhoff</title>
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-group">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1 class="app-title">CircuitLab Web</h1>
+          <p style="font-size: 10px; color: var(--text-muted);">Editor Rangkaian Listrik & Asumsi Arus (Mendukung LaTeX)</p>
+        </div>
+      </div>
+      <div id="word-status-badge" class="status-badge online">Mode Web (Siap Salin ke Word / Docs)</div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="toolbar-container">
+      <!-- Row 1: Alat Analisis & Asumsi Arus (Fitur Utama Belajar) -->
+      <div>
+        <div class="tool-group-title">
+          <span>🎯 Alat Analisis & Asumsi Arah Arus</span>
+        </div>
+        <div class="tool-row">
+          <button class="btn-tool tool-current" data-tool="current_arrow" title="Beri panah asumsi arah arus cabang (I1, I2, ..). Tekan 'R' untuk putar arah.">
+            <span>➡️</span> Panah Arus (I)
+          </button>
+          <button class="btn-tool tool-loop" data-tool="mesh_loop" title="Beri panah loop lintasan KVL. Tekan 'R' untuk putar searah/berlawanan jarum jam.">
+            <span>🔄</span> Loop KVL
+          </button>
+          <button class="btn-tool tool-node" data-tool="node_label" title="Beri penanda simpul KCL ($V_A$, $V_B$).">
+            <span>🟢</span> Simpul (Node)
+          </button>
+          <button class="btn-tool" data-tool="polarity" title="Beri tanda polaritas tegangan (+ / -). Tekan 'R' untuk ganti tanda.">
+            <span>±</span> Polaritas (+/-)
+          </button>
+          <button class="btn-tool tool-text" data-tool="text" title="Tambahkan Teks Bebas / Rumus Matematika LaTeX">
+            <span>🔤</span> Teks (LaTeX)
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 2: Komponen Elektronika & Kawat Lengkung -->
+      <div>
+        <div class="tool-group-title">
+          <span>⚡ Komponen Rangkaian & Kawat</span>
+        </div>
+        <div class="tool-row">
+          <button class="btn-tool active" data-tool="select" title="Pilih & Geser Komponen (atau Klik Kanan)">
+            <span>👆</span> Pilih
+          </button>
+          <button class="btn-tool" data-tool="pan" title="Geser Kanvas (atau tahan Klik Kiri di area kosong / Spasi + Drag / Tombol Roda Mouse)">
+            <span>🖐️</span> Geser (Pan)
+          </button>
+          <button class="btn-tool" data-tool="wire" title="Tarik Kawat Lurus (Klik titik awal lalu titik akhir, atau dobel klik)">
+            <span>📏</span> Kawat Lurus
+          </button>
+          <button class="btn-tool" data-tool="curved_wire" title="Kawat Melengkung / Jumper (Menghubungkan dua simpul secara melengkung)">
+            <span>↷</span> Kawat Lengkung
+          </button>
+          <button class="btn-tool" data-tool="resistor" title="Resistor (R). Tekan 'R' untuk putar 90°.">
+            <span>〰️</span> Resistor (R)
+          </button>
+          <button class="btn-tool" data-tool="vsource_dc" title="Sumber Tegangan DC / Baterai. Tekan 'R' untuk putar 90°.">
+            <span>🔋</span> Sumber DC (V)
+          </button>
+          <button class="btn-tool" data-tool="vsource_ac" title="Sumber Tegangan AC. Tekan 'R' untuk putar 90°.">
+            <span>∿</span> Sumber AC
+          </button>
+          <button class="btn-tool" data-tool="isource_dc" title="Sumber Arus (I). Tekan 'R' untuk putar 90°.">
+            <span>(→)</span> Sumber Arus
+          </button>
+          <button class="btn-tool" data-tool="capacitor" title="Kapasitor (C). Tekan 'R' untuk putar 90°.">
+            <span>||</span> Kapasitor (C)
+          </button>
+          <button class="btn-tool" data-tool="inductor" title="Induktor (L). Tekan 'R' untuk putar 90°.">
+            <span>⩫</span> Induktor (L)
+          </button>
+          <button class="btn-tool" data-tool="ground" title="Ground (GND)">
+            <span>⏚</span> Ground
+          </button>
+          <button class="btn-tool" data-tool="node" title="Titik Hubung Percabangan">
+            <span>●</span> Titik Hubung
+          </button>
+          <button class="btn-tool" data-tool="switch" title="Saklar. Tekan 'R' untuk putar 90°.">
+            <span>⚲</span> Saklar
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 3: Preset Contoh Rangkaian & Tombol Aksi Cepat -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Contoh:</span>
+          <select id="preset-select" class="form-select" style="padding: 3px 6px; font-size: 11px;">
+            <option value="twoLoopCircuit">Analisis 2-Loop (Kirchhoff)</option>
+            <option value="voltageDivider">Pembagi Tegangan (Divider)</option>
+            <option value="wheatstoneBridge">Jembatan Wheatstone</option>
+            <option value="">-- Kanvas Bersih --</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 4px;">
+          <button id="btn-rotate" class="btn-tool" title="Putar 90 Derajat (Shortcut: 'R')">
+            <span>🔄</span> Putar (R)
+          </button>
+          <button id="btn-undo" class="btn-tool" title="Undo (Ctrl+Z)">
+            <span>↩️</span>
+          </button>
+          <button id="btn-redo" class="btn-tool" title="Redo (Ctrl+Y)">
+            <span>↪️</span>
+          </button>
+          <button id="btn-delete" class="btn-tool" title="Hapus yang dipilih (Delete)">
+            <span>🗑️</span>
+          </button>
+          <button id="btn-clear" class="btn-tool" title="Kosongkan Kanvas">
+            <span>🧹</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Workspace -->
+    <main class="canvas-wrapper">
+      <div class="canvas-toolbar">
+        <span class="canvas-info">
+          💡 <b>Geser Kanvas</b>: Klik & tahan area kosong (atau Spasi / Tombol Roda Mouse) | <b>Zoom</b>: Scroll Roda Mouse | <b>Batal</b>: Klik Kanan | <b>'R'</b>: Rotasi 90°
+        </span>
+      </div>
+      <div class="canvas-box">
+        <canvas id="circuit-canvas" width="800" height="440"></canvas>
+
+        <!-- Floating Zoom & Viewport Controls -->
+        <div class="canvas-overlay-controls">
+          <button id="btn-zoom-out" class="zoom-btn" title="Zoom Out (Scroll Bawah / Ctrl -)">−</button>
+          <span id="zoom-indicator" class="zoom-indicator">100%</span>
+          <button id="btn-zoom-in" class="zoom-btn" title="Zoom In (Scroll Atas / Ctrl +)">+</button>
+          <button id="btn-zoom-fit" class="zoom-btn" title="Paskan Semua Rangkaian ke Layar" style="font-size: 11px; width: 34px;">Fit</button>
+          <button id="btn-zoom-reset" class="zoom-btn" title="Reset Zoom ke 100%" style="font-size: 11px; width: 34px;">1:1</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Property Inspector (Aktif saat komponen diklik) -->
+    <section id="inspector-panel" class="inspector-panel" style="display: none;">
+      <h3 class="inspector-title">⚙️ Properti Komponen / Anotasi</h3>
+      <div class="inspector-grid">
+        <div class="form-group" id="prop-label-group">
+          <label for="prop-label">Nama / Label (Mendukung LaTeX $...$):</label>
+          <input type="text" id="prop-label" class="form-input" placeholder="contoh: $R_1$, $I_A$, $V_{in}$">
+        </div>
+        <div id="prop-value-group" class="form-group">
+          <label for="prop-value">Nilai Komponen (LaTeX $...$):</label>
+          <input type="text" id="prop-value" class="form-input" placeholder="contoh: $10\ \Omega$, $12\ \text{V}$">
+        </div>
+        <div id="prop-dir-group" class="form-group" style="display: none;">
+          <label for="prop-direction">Arah Asumsi:</label>
+          <select id="prop-direction" class="form-select"></select>
+        </div>
+        <div id="prop-sign-group" class="form-group" style="display: none;">
+          <label for="prop-sign">Tanda:</label>
+          <select id="prop-sign" class="form-select">
+            <option value="+">Positif (+)</option>
+            <option value="-">Negatif (-)</option>
+          </select>
+        </div>
+        <div id="prop-curve-group" class="form-group" style="display: none; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label for="prop-curve">Tingkat & Arah Lengkungan: <strong id="prop-curve-val" style="color: var(--primary-color);">+35 px</strong></label>
+            <span style="font-size: 10px; color: var(--text-muted);">Bisa drag langsung titik biru di kanvas</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+            <input type="range" id="prop-curve" min="-180" max="180" step="5" value="35" style="flex: 1; min-width: 140px;">
+            <button id="btn-curve-up" class="btn-tool" style="padding: 3px 8px; font-size: 11px;" title="Lengkung ke Atas">↶ Atas</button>
+            <button id="btn-curve-down" class="btn-tool" style="padding: 3px 8px; font-size: 11px;" title="Lengkung ke Bawah">↷ Bawah</button>
+            <button id="btn-flip-curve" class="btn-tool" style="padding: 3px 8px; font-size: 11px;" title="Balik Arah Lengkungan (atau tekan 'R')">🔄 Balik (R)</button>
+          </div>
+        </div>
+
+        <!-- Khusus Teks Bebas / LaTeX -->
+        <div id="prop-text-group" class="form-group" style="display: none; grid-column: 1 / -1;">
+          <label for="prop-text-content">Isi Teks / Rumus Matematika (Mendukung LaTeX $...$):</label>
+          <input type="text" id="prop-text-content" class="form-input" placeholder="contoh: Rangkaian Thevenin, $V_{th} = 10\ \text{V}$, $i(0) = 2\ \text{A}$">
+          <div style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 110px;">
+              <label for="prop-text-size" style="font-size: 10px;">Ukuran Font:</label>
+              <select id="prop-text-size" class="form-select" style="padding: 3px 6px; font-size: 11px;">
+                <option value="11">Kecil (11px)</option>
+                <option value="14" selected>Sedang (14px)</option>
+                <option value="18">Besar (18px)</option>
+                <option value="22">Judul (22px)</option>
+              </select>
+            </div>
+            <div style="flex: 1; min-width: 110px;">
+              <label for="prop-text-color" style="font-size: 10px;">Warna Teks:</label>
+              <select id="prop-text-color" class="form-select" style="padding: 3px 6px; font-size: 11px;">
+                <option value="#0f172a" selected>Hitam Default</option>
+                <option value="#1d4ed8">Biru Utama</option>
+                <option value="#dc2626">Merah KVL</option>
+                <option value="#059669">Hijau Simpul</option>
+                <option value="#7e22ce">Ungu Catatan</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analysis Summary & Word Integration Actions -->
+    <section class="analysis-section">
+      <div class="analysis-header">
+        <h3>📝 Catatan Analisis & Persamaan (KCL / KVL)</h3>
+      </div>
+      <div id="analysis-preview" class="analysis-preview">Memuat ringkasan analisis...</div>
+
+      <div class="action-row">
+        <button id="btn-copy-image" class="btn-primary" title="Salin diagram PNG beresolusi tinggi ke clipboard, lalu tekan Ctrl+V di Microsoft Word atau Google Docs">
+          <span>📋 Salin Diagram ke Word (Ctrl+V)</span>
+        </button>
+
+        <div class="btn-secondary-group">
+          <button id="btn-copy-summary" class="btn-secondary" title="Salin teks analisis ke clipboard">
+            <span>📝 Salin Analisis</span>
+          </button>
+          <button id="btn-download-img" class="btn-secondary" title="Unduh gambar rangkaian format PNG">
+            <span>💾 Unduh PNG</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast-msg" class="toast-msg"></div>
+
+  <!-- Scripts -->
+  <script src="js/latex-renderer.js"></script>
+  <script src="js/circuit-canvas.js"></script>
+  <script src="js/equation-helper.js"></script>
+  <script src="js/presets.js"></script>
+  <script src="js/clipboard-helper.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

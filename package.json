@@ -1,0 +1,22 @@
+{
+  "name": "circuitlab-web",
+  "version": "1.0.0",
+  "description": "Interactive web-based circuit schematic editor and Kirchhoff law analysis tool with native LaTeX support and 1-click copy to Word/Docs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "circuit-diagram",
+    "schematic-editor",
+    "latex-math",
+    "kirchhoff",
+    "kcl",
+    "kvl",
+    "physics-education",
+    "electrical-engineering"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}
