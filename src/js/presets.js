@@ -111,7 +111,63 @@ const CircuitPresets = {
       { id: 'w12', x1: 150, y1: 240, x2: 250, y2: 240 },
       { id: 'w13', x1: 250, y1: 240, x2: 290, y2: 240 }
     ]
+  },
+
+  // Preset 4: Pengujian Instrumen Proteus (Voltmeter Paralel & Ammeter Seri)
+  proteusMeters: {
+    name: 'Pengujian Instrumen Proteus (Voltmeter & Ammeter)',
+    description: 'Rangkaian verifikasi Proteus dengan baterai 12V, resistor beban 10Ω, ammeter seri (1.20A), dan voltmeter paralel (12.00V).',
+    elements: [
+      { id: 'v1', type: 'vsource_dc', x: 80, y: 160, rotation: 90, label: '$V_1$', value: '$12\\ \\text{V}$' },
+      { id: 'gnd', type: 'ground', x: 80, y: 240, rotation: 0, label: 'GND' },
+      { id: 'r1', type: 'resistor', x: 220, y: 80, rotation: 0, label: '$R_1$', value: '$10\\ \\Omega$' },
+      { id: 'am1', type: 'dc_ammeter', x: 340, y: 80, rotation: 0, label: 'AM 1' },
+      { id: 'vm1', type: 'dc_voltmeter', x: 220, y: 180, rotation: 0, label: 'VM 1' }
+    ],
+    wires: [
+      { id: 'w1', x1: 80, y1: 130, x2: 80, y2: 80 },
+      { id: 'w2', x1: 80, y1: 80, x2: 190, y2: 80 },
+      { id: 'w3', x1: 190, y1: 80, x2: 190, y2: 180 },
+      { id: 'w4', x1: 250, y1: 80, x2: 310, y2: 80 },
+      { id: 'w5', x1: 250, y1: 80, x2: 250, y2: 180 },
+      { id: 'w6', x1: 370, y1: 80, x2: 440, y2: 80 },
+      { id: 'w7', x1: 440, y1: 80, x2: 440, y2: 240 },
+      { id: 'w8', x1: 440, y1: 240, x2: 80, y2: 240 },
+      { id: 'w9', x1: 80, y1: 190, x2: 80, y2: 240 }
+    ]
+  },
+
+  // Preset 5: Penguat Inverting Op-Amp LM741 (Materi Kuliah Semester 3)
+  opampInverting: {
+    name: 'Penguat Inverting Op-Amp LM741',
+    description: 'Rangkaian penguat inverting dengan Vin = 2V, Rin = 10kΩ, Rf = 20kΩ. Menghasilkan Vout = -4.00V (Gain = -2).',
+    elements: [
+      { id: 'vin', type: 'vsource_dc', x: 60, y: 150, rotation: 90, label: '$V_{in}$', value: '$2\\ \\text{V}$' },
+      { id: 'rin', type: 'resistor', x: 140, y: 120, rotation: 0, label: '$R_{in}$', value: '$10\\ \\text{k}\\Omega$' },
+      { id: 'rf', type: 'resistor', x: 260, y: 80, rotation: 0, label: '$R_f$', value: '$20\\ \\text{k}\\Omega$' },
+      { id: 'u1', type: 'opamp', x: 260, y: 160, rotation: 0, label: 'U1', value: 'LM741' },
+      { id: 'gnd', type: 'ground', x: 230, y: 210, rotation: 0, label: 'GND' },
+      { id: 'vm1', type: 'dc_voltmeter', x: 380, y: 160, rotation: 0, label: 'VM 1' }
+    ],
+    wires: [
+      { id: 'w1', x1: 60, y1: 120, x2: 110, y2: 120 },
+      { id: 'w2', x1: 170, y1: 120, x2: 230, y2: 120 },
+      { id: 'w3', x1: 230, y1: 120, x2: 230, y2: 80 },
+      { id: 'w5', x1: 230, y1: 120, x2: 230, y2: 150 },
+      { id: 'w6', x1: 290, y1: 80, x2: 290, y2: 160 },
+      { id: 'w7', x1: 230, y1: 170, x2: 230, y2: 210 },
+      { id: 'w8', x1: 60, y1: 180, x2: 60, y2: 210 },
+      { id: 'w9', x1: 60, y1: 210, x2: 230, y2: 210 },
+      { id: 'w10', x1: 290, y1: 160, x2: 350, y2: 160 },
+      { id: 'w11', x1: 410, y1: 160, x2: 410, y2: 210 },
+      { id: 'w12', x1: 410, y1: 210, x2: 230, y2: 210 }
+    ]
   }
 };
 
-window.CircuitPresets = CircuitPresets;
+if (typeof window !== 'undefined') {
+  window.CircuitPresets = CircuitPresets;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = CircuitPresets;
+}

@@ -51,7 +51,7 @@
       <!-- Row 2: Komponen Elektronika & Kawat Lengkung -->
       <div>
         <div class="tool-group-title">
-          <span>⚡ Komponen Rangkaian & Kawat</span>
+          <span>⚡ Komponen Rangkaian Dasar & Kawat</span>
         </div>
         <div class="tool-row">
           <button class="btn-tool active" data-tool="select" title="Pilih & Geser Komponen (atau Klik Kanan)">
@@ -90,16 +90,46 @@
           <button class="btn-tool" data-tool="node" title="Titik Hubung Percabangan">
             <span>●</span> Titik Hubung
           </button>
-          <button class="btn-tool" data-tool="switch" title="Saklar. Tekan 'R' untuk putar 90°.">
+          <button class="btn-tool" data-tool="switch" title="Saklar (Dobel-klik untuk buka/tutup). Tekan 'R' untuk putar 90°.">
             <span>⚲</span> Saklar
-          </button>
-          <button class="btn-tool" data-tool="multimeter" title="Multimeter Digital (Ukur Volt, Ampere, Ohm). Tekan 'R' untuk putar 90°.">
-            <span>📟</span> Multimeter
           </button>
         </div>
       </div>
 
-      <!-- Row 3: Preset Contoh Rangkaian & Tombol Aksi Cepat -->
+      <!-- Row 3: Instrumen Proteus VSM & Komponen Kuliah -->
+      <div>
+        <div class="tool-group-title">
+          <span>🔬 Instrumen Virtual Proteus & Sumber Dependen</span>
+        </div>
+        <div class="tool-row">
+          <button class="btn-tool tool-meter" data-tool="dc_voltmeter" title="DC Voltmeter Proteus (Ukur tegangan paralel). Tekan 'R' untuk putar 90°.">
+            <span>📟</span> DC Voltmeter
+          </button>
+          <button class="btn-tool tool-meter" data-tool="dc_ammeter" title="DC Ammeter Proteus (Ukur arus seri). Tekan 'R' untuk putar 90°.">
+            <span>⚡</span> DC Ammeter
+          </button>
+          <button class="btn-tool tool-meter" data-tool="ac_voltmeter" title="AC Voltmeter Proteus (Ukur RMS tegangan AC). Tekan 'R' untuk putar 90°.">
+            <span>∿</span> AC Voltmeter
+          </button>
+          <button class="btn-tool tool-meter" data-tool="ac_ammeter" title="AC Ammeter Proteus (Ukur RMS arus AC). Tekan 'R' untuk putar 90°.">
+            <span>∿</span> AC Ammeter
+          </button>
+          <button class="btn-tool tool-meter" data-tool="wattmeter" title="Wattmeter 4-Terminal Proteus (Ukur daya nyata P = V * I). Tekan 'R' untuk putar 90°.">
+            <span>💡</span> Wattmeter
+          </button>
+          <button class="btn-tool tool-meter" data-tool="multimeter" title="Digital Multimeter (DMM - Volt/Amp/Ohm). Tekan 'R' untuk putar 90°.">
+            <span>🎛️</span> Multimeter (DMM)
+          </button>
+          <button class="btn-tool tool-ic" data-tool="opamp" title="Op-Amp Ideal (LM741 / Operational Amplifier 3-Terminal). Tekan 'R' untuk putar 90°.">
+            <span>⧯</span> Op-Amp (LM741)
+          </button>
+          <button class="btn-tool tool-ic" data-tool="vcvs" title="Sumber Tegangan Terkendali Tegangan (VCVS - Diamond). Tekan 'R' untuk putar 90°.">
+            <span>◇</span> Sumber Terkendali (VCVS)
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 4: Preset Contoh Rangkaian & Tombol Aksi Cepat -->
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Contoh:</span>
@@ -107,11 +137,10 @@
             <option value="twoLoopCircuit">Analisis 2-Loop (Kirchhoff)</option>
             <option value="voltageDivider">Pembagi Tegangan (Divider)</option>
             <option value="wheatstoneBridge">Jembatan Wheatstone</option>
+            <option value="proteusMeters">Uji Instrumen Proteus (Voltmeter & Ammeter)</option>
+            <option value="opampInverting">Penguat Inverting Op-Amp LM741</option>
             <option value="">-- Kanvas Bersih --</option>
           </select>
-          <button id="btn-toggle-sim" class="btn-tool" style="background: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 600; padding: 3px 8px;" title="Jalankan / Hentikan Simulasi Rangkaian Nyata">
-            <span id="sim-btn-icon">▶️</span> <span id="sim-btn-text">Mode Simulasi: OFF</span>
-          </button>
         </div>
 
         <div style="display: flex; gap: 4px;">
@@ -151,6 +180,29 @@
           <button id="btn-zoom-in" class="zoom-btn" title="Zoom In (Scroll Atas / Ctrl +)">+</button>
           <button id="btn-zoom-fit" class="zoom-btn" title="Paskan Semua Rangkaian ke Layar" style="font-size: 11px; width: 34px;">Fit</button>
           <button id="btn-zoom-reset" class="zoom-btn" title="Reset Zoom ke 100%" style="font-size: 11px; width: 34px;">1:1</button>
+        </div>
+      </div>
+
+      <!-- Proteus VSM Interactive Transport Simulation Bar -->
+      <div class="proteus-transport-bar">
+        <div class="transport-controls">
+          <button id="btn-sim-run" class="btn-transport run active" title="Jalankan Simulasi Interaktif Proteus (Live Analysis)">
+            <span class="transport-icon">▶</span> Run
+          </button>
+          <button id="btn-sim-pause" class="btn-transport pause" title="Jeda Simulasi">
+            <span class="transport-icon">⏸</span> Pause
+          </button>
+          <button id="btn-sim-stop" class="btn-transport stop" title="Hentikan Simulasi">
+            <span class="transport-icon">⏹</span> Stop
+          </button>
+        </div>
+        <div class="transport-status">
+          <span id="sim-status-led" class="status-led running"></span>
+          <span id="sim-status-text" class="status-text">SIMULATION RUNNING</span>
+          <span class="status-sep">|</span>
+          <span class="engine-badge">Engine: Proteus MNA Solver (Kuliah Rangkaian Listrik)</span>
+          <span class="status-sep">|</span>
+          <span id="sim-timer-display" class="sim-timer">Live Reactive</span>
         </div>
       </div>
     </main>
@@ -215,6 +267,18 @@
               <option value="resistance">Ohmmeter (Resistansi ekuivalen Ω)</option>
               <option value="voltage_ac">Voltmeter AC (RMS V~)</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Khusus Virtual Instruments Proteus (Voltmeter, Ammeter, Wattmeter, Op-Amp, VCVS) -->
+        <div id="prop-instrument-group" class="form-group" style="display: none; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label id="prop-instrument-title">Pembacaan Instrumen Proteus:</label>
+            <div id="prop-instrument-badge" style="font-family: monospace; font-weight: bold; background: #0f172a; color: #4ade80; padding: 3px 10px; border-radius: 4px; font-size: 14px; letter-spacing: 0.5px;">--.--</div>
+          </div>
+          <div id="prop-vcvs-gain-box" style="display: none; margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+            <label for="prop-vcvs-gain" style="font-size: 11px;">Faktor Pengali (Gain μ):</label>
+            <input type="number" id="prop-vcvs-gain" class="form-input" style="width: 100px;" value="2" step="0.1">
           </div>
         </div>
 

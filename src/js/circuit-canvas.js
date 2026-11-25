@@ -58,9 +58,10 @@ class CircuitCanvas {
     this.onCurveChange = options.onCurveChange || null;
     this.onSimulationChange = options.onSimulationChange || null;
 
-    // Simulation Engine State
-    this.isSimulating = false;
+    // Simulation Engine State (Default: Aktif Live seperti Proteus)
+    this.isSimulating = true;
     this.simulationResults = null;
+    this.simulationPaused = false;
 
     // Terminal Port Snapping & Wire Dynamic Binding (draw.io style)
     this.wireStartBinding = null;
@@ -270,6 +271,12 @@ class CircuitCanvas {
       case 'vsource_ac':
       case 'isource_dc':
       case 'switch':
+      case 'dc_voltmeter':
+      case 'ac_voltmeter':
+      case 'dc_ammeter':
+      case 'ac_ammeter':
+      case 'vcvs':
+      case 'vccs':
         return [
           toWorld(-30, 0, 't1'),
           toWorld(30, 0, 't2')
@@ -278,6 +285,19 @@ class CircuitCanvas {
         return [
           toWorld(-30, 10, 'probe_red'),
           toWorld(30, 10, 'probe_black')
+        ];
+      case 'wattmeter':
+        return [
+          toWorld(-30, -10, 'i_in'),
+          toWorld(30, -10, 'i_out'),
+          toWorld(-30, 15, 'v_pos'),
+          toWorld(30, 15, 'v_neg')
+        ];
+      case 'opamp':
+        return [
+          toWorld(-30, -12, 'inv'),
+          toWorld(-30, 12, 'non_inv'),
+          toWorld(30, 0, 'out')
         ];
       case 'ground':
         return [
@@ -594,6 +614,10 @@ class CircuitCanvas {
               };
               this.wires.push(newWire);
               this.saveState();
+              if (this.isSimulating) {
+                this.runSimulation();
+              }
+              if (this.onCircuitChange) this.onCircuitChange(this);
               if (isCurved) {
                 this.selectedItem = { type: 'wire', item: newWire };
                 if (this.onSelectionChange) this.onSelectionChange(this.selectedItem);
@@ -693,6 +717,10 @@ class CircuitCanvas {
         this.isDragging = false;
         this.isDraggingCurveHandle = false;
         this.saveState();
+        if (this.isSimulating) {
+          this.runSimulation();
+        }
+        if (this.onCircuitChange) this.onCircuitChange(this);
       }
     };
 
@@ -907,6 +935,84 @@ class CircuitCanvas {
           labelRotation: 0
         };
         break;
+      case 'dc_voltmeter':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'VM ' + (this.countType('dc_voltmeter') + 1),
+          value: '',
+          displayReading: this.isSimulating ? '0.00 V' : '--.--',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'dc_ammeter':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'AM ' + (this.countType('dc_ammeter') + 1),
+          value: '',
+          displayReading: this.isSimulating ? '0.00 A' : '--.--',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'ac_voltmeter':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'AC VM ' + (this.countType('ac_voltmeter') + 1),
+          value: '',
+          displayReading: this.isSimulating ? '0.00 V~' : '--.--',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'ac_ammeter':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'AC AM ' + (this.countType('ac_ammeter') + 1),
+          value: '',
+          displayReading: this.isSimulating ? '0.00 A~' : '--.--',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'wattmeter':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'WM ' + (this.countType('wattmeter') + 1),
+          value: '',
+          displayReading: this.isSimulating ? '0.00 W' : '--.--',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'opamp':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: 'U' + (this.countType('opamp') + 1),
+          value: 'LM741',
+          displayReading: '0.00 V',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'vcvs':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: '$E_' + (this.countType('vcvs') + 1) + '$',
+          value: '$2\\ V_x$',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
+      case 'vccs':
+        newItem = {
+          id, type, x, y,
+          rotation: this.placementRotation,
+          label: '$G_' + (this.countType('vccs') + 1) + '$',
+          value: '$0.5\\ I_1$',
+          labelOffsetX: 0, labelOffsetY: 0, labelRotation: 0
+        };
+        break;
       case 'node':
         newItem = { id, type, x, y, rotation: 0, label: '', value: '' };
         break;
@@ -953,7 +1059,11 @@ class CircuitCanvas {
       this.elements.push(newItem);
       this.selectedItem = { type: 'element', item: newItem };
       this.saveState();
+      if (this.isSimulating) {
+        this.runSimulation();
+      }
       if (this.onSelectionChange) this.onSelectionChange(this.selectedItem);
+      if (this.onCircuitChange) this.onCircuitChange(this);
     }
   }
 
@@ -979,12 +1089,19 @@ class CircuitCanvas {
         this.rotateElement(el);
       }
       this.saveState();
+      if (this.isSimulating) {
+        this.runSimulation();
+      }
       this.render();
       if (this.onSelectionChange) this.onSelectionChange(this.selectedItem);
+      if (this.onCircuitChange) this.onCircuitChange(this);
     } else if (this.selectedItem.type === 'wire' && this.selectedItem.item.curved) {
       this.selectedItem.item.curveOffset = -this.selectedItem.item.curveOffset;
       if (this.onCurveChange) this.onCurveChange(this.selectedItem.item.curveOffset);
       this.saveState();
+      if (this.isSimulating) {
+        this.runSimulation();
+      }
       this.render();
     }
   }
@@ -1003,8 +1120,12 @@ class CircuitCanvas {
     }
     this.selectedItem = null;
     this.saveState();
+    if (this.isSimulating) {
+      this.runSimulation();
+    }
     this.render();
     if (this.onSelectionChange) this.onSelectionChange(null);
+    if (this.onCircuitChange) this.onCircuitChange(this);
   }
 
   hitTest(x, y) {
@@ -1036,7 +1157,7 @@ class CircuitCanvas {
         if (Math.abs(x - el.x) <= halfW && Math.abs(y - el.y) <= halfH) {
           return { type: 'element', item: el };
         }
-      } else if (el.type === 'multimeter') {
+      } else if (['multimeter', 'wattmeter'].includes(el.type)) {
         const rad = ((el.rotation || 0) * Math.PI) / 180;
         const cos = Math.cos(-rad);
         const sin = Math.sin(-rad);
@@ -1045,6 +1166,39 @@ class CircuitCanvas {
         const lx = dx * cos - dy * sin;
         const ly = dx * sin + dy * cos;
         if (Math.abs(lx) <= 36 && Math.abs(ly) <= 30) {
+          return { type: 'element', item: el };
+        }
+      } else if (['dc_voltmeter', 'ac_voltmeter', 'dc_ammeter', 'ac_ammeter'].includes(el.type)) {
+        const rad = ((el.rotation || 0) * Math.PI) / 180;
+        const cos = Math.cos(-rad);
+        const sin = Math.sin(-rad);
+        const dx = x - el.x;
+        const dy = y - el.y;
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+        if (Math.abs(lx) <= 32 && Math.abs(ly) <= 22) {
+          return { type: 'element', item: el };
+        }
+      } else if (el.type === 'opamp') {
+        const rad = ((el.rotation || 0) * Math.PI) / 180;
+        const cos = Math.cos(-rad);
+        const sin = Math.sin(-rad);
+        const dx = x - el.x;
+        const dy = y - el.y;
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+        if (Math.abs(lx) <= 26 && Math.abs(ly) <= 26) {
+          return { type: 'element', item: el };
+        }
+      } else if (['vcvs', 'vccs'].includes(el.type)) {
+        const rad = ((el.rotation || 0) * Math.PI) / 180;
+        const cos = Math.cos(-rad);
+        const sin = Math.sin(-rad);
+        const dx = x - el.x;
+        const dy = y - el.y;
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+        if (Math.abs(lx) <= 20 && Math.abs(ly) <= 20) {
           return { type: 'element', item: el };
         }
       } else {
@@ -1261,20 +1415,44 @@ class CircuitCanvas {
     // 6. Terminal Ports & Magnet Snap Visual Indicators (Draw.io style)
     this.drawTerminalPorts(ctx);
 
+    // 7. Proteus Logic State Indicator Dots (Merah = Positif, Biru = Negatif, Hijau = Ground)
+    if (this.isSimulating && this.simulationResults && this.simulationResults.nodeVoltages) {
+      ctx.save();
+      for (const el of this.elements) {
+        if (['text', 'current_arrow', 'mesh_loop', 'polarity'].includes(el.type)) continue;
+        const terms = this.getTerminals(el);
+        const res = this.simulationResults.elements ? this.simulationResults.elements.get(el.id) : null;
+        if (res && terms.length >= 2) {
+          const v1 = res.v1 || 0;
+          const v2 = res.v2 || 0;
+
+          // Dot untuk terminal 1 (Proteus style logic indicator)
+          ctx.fillStyle = v1 > 0.05 ? '#ef4444' : (v1 < -0.05 ? '#3b82f6' : '#10b981');
+          ctx.fillRect(terms[0].x - 2.5, terms[0].y - 2.5, 5, 5);
+
+          // Dot untuk terminal 2
+          ctx.fillStyle = v2 > 0.05 ? '#ef4444' : (v2 < -0.05 ? '#3b82f6' : '#10b981');
+          ctx.fillRect(terms[1].x - 2.5, terms[1].y - 2.5, 5, 5);
+        }
+      }
+      ctx.restore();
+    }
+
     ctx.restore();
 
-    // 7. Status HUD Simulasi (di pojok kanvas dalam koordinat layar)
+    // 8. Status HUD Simulasi Proteus (di pojok kanvas dalam koordinat layar)
     if (this.isSimulating) {
       ctx.save();
       const isSolved = this.simulationResults && this.simulationResults.solved;
-      const statusText = isSolved ? '● SIMULASI AKTIF (DC)' : '▲ SIMULASI: Rangkaian Terbuka';
+      const isPaused = this.simulationPaused;
+      const statusText = isPaused ? '⏸ SIMULASI DI-PAUSE' : (isSolved ? '● SIMULASI AKTIF (LIVE PROTEUS)' : '▲ RANGKAIAN TERBUKA / BELUM LENGKAP');
       ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       const textW = ctx.measureText(statusText).width;
       const boxW = textW + 20;
       const boxH = 24;
 
-      ctx.fillStyle = isSolved ? 'rgba(236, 253, 245, 0.95)' : 'rgba(254, 243, 199, 0.95)';
-      ctx.strokeStyle = isSolved ? '#10b981' : '#f59e0b';
+      ctx.fillStyle = isPaused ? 'rgba(254, 240, 138, 0.95)' : (isSolved ? 'rgba(236, 253, 245, 0.95)' : 'rgba(254, 243, 199, 0.95)');
+      ctx.strokeStyle = isPaused ? '#eab308' : (isSolved ? '#10b981' : '#f59e0b');
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       if (typeof ctx.roundRect === 'function') {
@@ -1285,7 +1463,7 @@ class CircuitCanvas {
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = isSolved ? '#065f46' : '#92400e';
+      ctx.fillStyle = isPaused ? '#854d0e' : (isSolved ? '#065f46' : '#92400e');
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
       ctx.fillText(statusText, 22, 12 + boxH / 2);
@@ -1325,6 +1503,28 @@ class CircuitCanvas {
         break;
       case 'multimeter':
         this.drawMultimeter(ctx, el, isSelected);
+        break;
+      case 'dc_voltmeter':
+        this.drawDCVoltmeter(ctx, el, isSelected);
+        break;
+      case 'dc_ammeter':
+        this.drawDCAmmeter(ctx, el, isSelected);
+        break;
+      case 'ac_voltmeter':
+        this.drawACVoltmeter(ctx, el, isSelected);
+        break;
+      case 'ac_ammeter':
+        this.drawACAmmeter(ctx, el, isSelected);
+        break;
+      case 'wattmeter':
+        this.drawWattmeter(ctx, el, isSelected);
+        break;
+      case 'opamp':
+        this.drawOpAmp(ctx, el, isSelected);
+        break;
+      case 'vcvs':
+      case 'vccs':
+        this.drawDependentSource(ctx, el, isSelected);
         break;
       case 'node':
         this.drawNode(ctx, el);
@@ -1732,6 +1932,318 @@ class CircuitCanvas {
     this.drawComponentLabel(ctx, el, 0, -32);
   }
 
+  drawDCVoltmeter(ctx, el, isSelected) {
+    ctx.save();
+    const w = 58, h = 38, x = -w / 2, y = -h / 2;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = isSelected ? '#3b82f6' : '#475569';
+    ctx.lineWidth = isSelected ? 2.2 : 1.5;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 4);
+    else ctx.rect(x, y, w, h);
+    ctx.fill();
+    ctx.stroke();
+
+    const lcdW = 50, lcdH = 18, lcdX = -lcdW / 2, lcdY = y + 14;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(lcdX, lcdY, lcdW, lcdH);
+
+    ctx.font = 'bold 8px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('DC VOLTS', lcdX + 2, y + 10);
+
+    const reading = el.displayReading || (this.isSimulating ? '0.00 V' : '--.--');
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#4ade80';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(reading, lcdX + lcdW - 2, lcdY + lcdH / 2);
+
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(-30, 0); ctx.lineTo(x, 0);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(x + w, 0); ctx.lineTo(30, 0);
+    ctx.stroke();
+
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillStyle = '#ef4444'; ctx.textAlign = 'center'; ctx.fillText('+', x - 5, -5);
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('−', x + w + 5, -5);
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -26);
+  }
+
+  drawDCAmmeter(ctx, el, isSelected) {
+    ctx.save();
+    const w = 58, h = 38, x = -w / 2, y = -h / 2;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = isSelected ? '#3b82f6' : '#475569';
+    ctx.lineWidth = isSelected ? 2.2 : 1.5;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 4);
+    else ctx.rect(x, y, w, h);
+    ctx.fill();
+    ctx.stroke();
+
+    const lcdW = 50, lcdH = 18, lcdX = -lcdW / 2, lcdY = y + 14;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(lcdX, lcdY, lcdW, lcdH);
+
+    ctx.font = 'bold 8px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('DC AMPS', lcdX + 2, y + 10);
+
+    const reading = el.displayReading || (this.isSimulating ? '0.00 A' : '--.--');
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#38bdf8';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(reading, lcdX + lcdW - 2, lcdY + lcdH / 2);
+
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(-30, 0); ctx.lineTo(x, 0);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(x + w, 0); ctx.lineTo(30, 0);
+    ctx.stroke();
+
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillStyle = '#ef4444'; ctx.textAlign = 'center'; ctx.fillText('+', x - 5, -5);
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('−', x + w + 5, -5);
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -26);
+  }
+
+  drawACVoltmeter(ctx, el, isSelected) {
+    ctx.save();
+    const w = 58, h = 38, x = -w / 2, y = -h / 2;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = isSelected ? '#3b82f6' : '#475569';
+    ctx.lineWidth = isSelected ? 2.2 : 1.5;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 4);
+    else ctx.rect(x, y, w, h);
+    ctx.fill();
+    ctx.stroke();
+
+    const lcdW = 50, lcdH = 18, lcdX = -lcdW / 2, lcdY = y + 14;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(lcdX, lcdY, lcdW, lcdH);
+
+    ctx.font = 'bold 8px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('AC VOLTS ~', lcdX + 2, y + 10);
+
+    const reading = el.displayReading || (this.isSimulating ? '0.00 V~' : '--.--');
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#facc15';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(reading, lcdX + lcdW - 2, lcdY + lcdH / 2);
+
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(-30, 0); ctx.lineTo(x, 0);
+    ctx.moveTo(x + w, 0); ctx.lineTo(30, 0);
+    ctx.stroke();
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -26);
+  }
+
+  drawACAmmeter(ctx, el, isSelected) {
+    ctx.save();
+    const w = 58, h = 38, x = -w / 2, y = -h / 2;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = isSelected ? '#3b82f6' : '#475569';
+    ctx.lineWidth = isSelected ? 2.2 : 1.5;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 4);
+    else ctx.rect(x, y, w, h);
+    ctx.fill();
+    ctx.stroke();
+
+    const lcdW = 50, lcdH = 18, lcdX = -lcdW / 2, lcdY = y + 14;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(lcdX, lcdY, lcdW, lcdH);
+
+    ctx.font = 'bold 8px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('AC AMPS ~', lcdX + 2, y + 10);
+
+    const reading = el.displayReading || (this.isSimulating ? '0.00 A~' : '--.--');
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#facc15';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(reading, lcdX + lcdW - 2, lcdY + lcdH / 2);
+
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(-30, 0); ctx.lineTo(x, 0);
+    ctx.moveTo(x + w, 0); ctx.lineTo(30, 0);
+    ctx.stroke();
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -26);
+  }
+
+  drawWattmeter(ctx, el, isSelected) {
+    ctx.save();
+    const w = 62, h = 48, x = -w / 2, y = -h / 2;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = isSelected ? '#3b82f6' : '#475569';
+    ctx.lineWidth = isSelected ? 2.2 : 1.5;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 4);
+    else ctx.rect(x, y, w, h);
+    ctx.fill();
+    ctx.stroke();
+
+    const lcdW = 52, lcdH = 18, lcdX = -lcdW / 2, lcdY = y + 11;
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(lcdX, lcdY, lcdW, lcdH);
+
+    ctx.font = 'bold 8px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('WATTMETER (P)', lcdX + 2, y + 9);
+
+    const reading = el.displayReading || (this.isSimulating ? '0.00 W' : '--.--');
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#fb923c';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(reading, lcdX + lcdW - 2, lcdY + lcdH / 2);
+
+    // Terminal Arus atas: I+ (-30, -10), I- (30, -10)
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(-30, -10); ctx.lineTo(x, -10);
+    ctx.moveTo(x + w, -10); ctx.lineTo(30, -10);
+    ctx.stroke();
+
+    // Terminal Tegangan bawah: V+ (-30, 15), V- (30, 15)
+    ctx.strokeStyle = '#2563eb';
+    ctx.beginPath();
+    ctx.moveTo(-30, 15); ctx.lineTo(x, 15);
+    ctx.moveTo(x + w, 15); ctx.lineTo(30, 15);
+    ctx.stroke();
+
+    ctx.font = 'bold 7px sans-serif';
+    ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right'; ctx.fillText('I+', x - 3, -10);
+    ctx.fillStyle = '#64748b'; ctx.textAlign = 'left'; ctx.fillText('I−', x + w + 3, -10);
+    ctx.fillStyle = '#3b82f6'; ctx.textAlign = 'right'; ctx.fillText('V+', x - 3, 15);
+    ctx.fillStyle = '#64748b'; ctx.textAlign = 'left'; ctx.fillText('V−', x + w + 3, 15);
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -32);
+  }
+
+  drawOpAmp(ctx, el, isSelected) {
+    ctx.save();
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = isSelected ? '#2563eb' : '#0f172a';
+    ctx.fillStyle = '#f8fafc';
+
+    // Segitiga Op-Amp menghadap kanan
+    ctx.beginPath();
+    ctx.moveTo(-20, -22);
+    ctx.lineTo(20, 0);
+    ctx.lineTo(-20, 22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Terminal Inverting (-): (-30, -12) ke (-20, -12)
+    ctx.beginPath();
+    ctx.moveTo(-30, -12); ctx.lineTo(-20, -12);
+    // Terminal Non-Inverting (+): (-30, 12) ke (-20, 12)
+    ctx.moveTo(-30, 12); ctx.lineTo(-20, 12);
+    // Terminal Output: (20, 0) ke (30, 0)
+    ctx.moveTo(20, 0); ctx.lineTo(30, 0);
+    ctx.stroke();
+
+    // Tanda − dan + di dalam segitiga
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#0f172a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('−', -12, -12);
+    ctx.fillText('+', -12, 12);
+
+    // Label model Op-Amp di tengah
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(el.value || 'LM741', 2, 0);
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -28);
+  }
+
+  drawDependentSource(ctx, el, isSelected) {
+    ctx.save();
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = isSelected ? '#2563eb' : '#0f172a';
+    ctx.fillStyle = '#ffffff';
+
+    // Belah ketupat (Diamond)
+    const r = 18;
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r, 0);
+    ctx.lineTo(0, r);
+    ctx.lineTo(-r, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Terminal kiri dan kanan
+    ctx.beginPath();
+    ctx.moveTo(-30, 0); ctx.lineTo(-r, 0);
+    ctx.moveTo(r, 0); ctx.lineTo(30, 0);
+    ctx.stroke();
+
+    if (el.type === 'vcvs') {
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText('+', -7, 0);
+      ctx.fillText('−', 7, 0);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(-8, 0); ctx.lineTo(8, 0);
+      ctx.stroke();
+      this.drawArrowHead(ctx, -8, 0, 8, 0, 5);
+    }
+
+    ctx.restore();
+    this.drawComponentLabel(ctx, el, 0, -24);
+  }
+
   drawNode(ctx, el) {
     ctx.beginPath();
     ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
@@ -2021,29 +2533,46 @@ class CircuitCanvas {
     if (this.onSelectionChange) this.onSelectionChange(this.selectedItem);
   }
 
-  // --- KONTROL SIMULASI RANGKAIAN LISTRIK ---
-  toggleSimulation(forceState) {
-    this.isSimulating = (forceState !== undefined) ? forceState : !this.isSimulating;
-    if (this.isSimulating) {
-      this.runSimulation();
-    } else {
-      this.simulationResults = null;
-      for (const el of this.elements) {
-        if (el.type === 'multimeter') {
-          el.displayReading = '--.--';
-        }
-      }
-      this.render();
-      if (this.onCircuitChange) this.onCircuitChange(this);
-    }
+  // --- KONTROL SIMULASI RANGKAIAN LISTRIK (PROTEUS STYLE) ---
+  startSimulation() {
+    this.isSimulating = true;
+    this.simulationPaused = false;
+    this.runSimulation();
+    if (this.onSimulationChange) this.onSimulationChange(true, this.simulationResults);
+    return true;
+  }
 
-    if (this.onSimulationChange) {
-      this.onSimulationChange(this.isSimulating, this.simulationResults);
+  pauseSimulation() {
+    this.simulationPaused = !this.simulationPaused;
+    this.render();
+    if (this.onSimulationChange) this.onSimulationChange(this.isSimulating, this.simulationResults, this.simulationPaused);
+    return this.simulationPaused;
+  }
+
+  stopSimulation() {
+    this.isSimulating = false;
+    this.simulationPaused = false;
+    this.simulationResults = null;
+    for (const el of this.elements) {
+      if (['multimeter', 'dc_voltmeter', 'ac_voltmeter', 'dc_ammeter', 'ac_ammeter', 'wattmeter'].includes(el.type)) {
+        el.displayReading = '--.--';
+      }
     }
-    return this.isSimulating;
+    this.render();
+    if (this.onCircuitChange) this.onCircuitChange(this);
+    if (this.onSimulationChange) this.onSimulationChange(false, null);
+    return false;
+  }
+
+  toggleSimulation(forceState) {
+    if (forceState !== undefined) {
+      return forceState ? this.startSimulation() : this.stopSimulation();
+    }
+    return this.isSimulating ? this.stopSimulation() : this.startSimulation();
   }
 
   runSimulation() {
+    if (!this.isSimulating || this.simulationPaused) return;
     if (typeof CircuitSolver === 'undefined') {
       console.warn('CircuitSolver tidak ditemukan.');
       return;
@@ -2059,7 +2588,7 @@ class CircuitCanvas {
     this.render();
     if (this.onCircuitChange) this.onCircuitChange(this);
     if (this.onSimulationChange) {
-      this.onSimulationChange(this.isSimulating, this.simulationResults);
+      this.onSimulationChange(this.isSimulating, this.simulationResults, this.simulationPaused);
     }
   }
 }

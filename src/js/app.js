@@ -37,6 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const simBtnIcon = document.getElementById('sim-btn-icon');
   const simBtnText = document.getElementById('sim-btn-text');
 
+  // Proteus VSM Transport Controls
+  const btnSimRun = document.getElementById('btn-sim-run');
+  const btnSimPause = document.getElementById('btn-sim-pause');
+  const btnSimStop = document.getElementById('btn-sim-stop');
+  const simStatusLed = document.getElementById('sim-status-led');
+  const simStatusText = document.getElementById('sim-status-text');
+  const simTimerDisplay = document.getElementById('sim-timer-display');
+
+  // Proteus Instruments Inspector UI
+  const propInstrumentGroup = document.getElementById('prop-instrument-group');
+  const propInstrumentTitle = document.getElementById('prop-instrument-title');
+  const propInstrumentBadge = document.getElementById('prop-instrument-badge');
+  const propVcvsGainBox = document.getElementById('prop-vcvs-gain-box');
+  const propVcvsGain = document.getElementById('prop-vcvs-gain');
+
   const propSwitchGroup = document.getElementById('prop-switch-group');
   const btnToggleSwitchProp = document.getElementById('btn-toggle-switch-prop');
   const propSwitchIcon = document.getElementById('prop-switch-icon');
@@ -81,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (propTextGroup) propTextGroup.style.display = 'none';
       if (propSwitchGroup) propSwitchGroup.style.display = 'none';
       if (propMultimeterGroup) propMultimeterGroup.style.display = 'none';
+      if (propInstrumentGroup) propInstrumentGroup.style.display = 'none';
       if (propLabelPosGroup) propLabelPosGroup.style.display = 'none';
 
       if (wire.curved && propCurveGroup && propCurve) {
@@ -104,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (propCurveGroup) propCurveGroup.style.display = 'none';
       if (propSwitchGroup) propSwitchGroup.style.display = 'none';
       if (propMultimeterGroup) propMultimeterGroup.style.display = 'none';
+      if (propInstrumentGroup) propInstrumentGroup.style.display = 'none';
       if (propLabelPosGroup) propLabelPosGroup.style.display = 'none';
 
       if (propTextGroup) {
@@ -126,7 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Pengaturan Posisi & Rotasi Teks Label Komponen
     if (propLabelPosGroup) {
-      if (['resistor', 'capacitor', 'inductor', 'vsource_dc', 'vsource_ac', 'isource_dc', 'ground', 'switch', 'multimeter'].includes(el.type)) {
+      const allowedComp = [
+        'resistor', 'capacitor', 'inductor', 'vsource_dc', 'vsource_ac', 'isource_dc',
+        'ground', 'switch', 'multimeter', 'dc_voltmeter', 'dc_ammeter', 'ac_voltmeter',
+        'ac_ammeter', 'wattmeter', 'opamp', 'vcvs', 'vccs'
+      ];
+      if (allowedComp.includes(el.type)) {
         propLabelPosGroup.style.display = 'block';
         if (propLabelOffsetX) propLabelOffsetX.value = el.labelOffsetX || 0;
         if (propLabelOffsetY) propLabelOffsetY.value = el.labelOffsetY || 0;
@@ -164,9 +186,42 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Instrumen Virtual Proteus (DC/AC Voltmeter, DC/AC Ammeter, Wattmeter, Op-Amp, VCVS)
+    if (propInstrumentGroup) {
+      const isProteusInst = ['dc_voltmeter', 'dc_ammeter', 'ac_voltmeter', 'ac_ammeter', 'wattmeter', 'opamp', 'vcvs', 'vccs'].includes(el.type);
+      if (isProteusInst) {
+        propInstrumentGroup.style.display = 'block';
+        const titleMap = {
+          dc_voltmeter: 'Pembacaan DC Voltmeter (V):',
+          dc_ammeter: 'Pembacaan DC Ammeter (A):',
+          ac_voltmeter: 'Pembacaan AC Voltmeter (RMS V~):',
+          ac_ammeter: 'Pembacaan AC Ammeter (RMS A~):',
+          wattmeter: 'Pembacaan Daya Wattmeter (W):',
+          opamp: 'Tegangan Keluaran Op-Amp (Vout):',
+          vcvs: 'Sumber Dependen VCVS (μ * V_ctrl):',
+          vccs: 'Sumber Dependen VCCS (g_m * V_ctrl):'
+        };
+        if (propInstrumentTitle) propInstrumentTitle.textContent = titleMap[el.type] || 'Pembacaan Instrumen:';
+        if (propInstrumentBadge) {
+          propInstrumentBadge.textContent = el.displayReading || (circuit && circuit.isSimulating ? '0.00' : '--.--');
+        }
+
+        if (propVcvsGainBox) {
+          if (el.type === 'vcvs' || el.type === 'vccs') {
+            propVcvsGainBox.style.display = 'flex';
+            if (propVcvsGain) propVcvsGain.value = el.gain !== undefined ? el.gain : 2;
+          } else {
+            propVcvsGainBox.style.display = 'none';
+          }
+        }
+      } else {
+        propInstrumentGroup.style.display = 'none';
+      }
+    }
+
     // Field value komponen
     if (propValueGroup && propValue) {
-      if (['resistor', 'capacitor', 'inductor', 'vsource_dc', 'vsource_ac', 'isource_dc'].includes(el.type)) {
+      if (['resistor', 'capacitor', 'inductor', 'vsource_dc', 'vsource_ac', 'isource_dc', 'opamp'].includes(el.type)) {
         propValueGroup.style.display = 'flex';
         propValue.value = el.value || '';
       } else {
@@ -235,10 +290,39 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Proteus VSM Transport Bar State
+    const isPaused = circuit && circuit.isPaused;
+    if (btnSimRun) btnSimRun.classList.toggle('active', isSimulating && !isPaused);
+    if (btnSimPause) btnSimPause.classList.toggle('active', isSimulating && isPaused);
+    if (btnSimStop) btnSimStop.classList.toggle('active', !isSimulating);
+
+    if (simStatusLed && simStatusText) {
+      if (!isSimulating) {
+        simStatusLed.className = 'status-led stopped';
+        simStatusText.className = 'status-text stopped';
+        simStatusText.textContent = 'SIMULATION STOPPED';
+      } else if (isPaused) {
+        simStatusLed.className = 'status-led paused';
+        simStatusText.className = 'status-text paused';
+        simStatusText.textContent = 'SIMULATION PAUSED';
+      } else {
+        simStatusLed.className = 'status-led running';
+        simStatusText.className = 'status-text running';
+        simStatusText.textContent = 'SIMULATION RUNNING';
+      }
+    }
+
+    if (simTimerDisplay) {
+      simTimerDisplay.textContent = isSimulating ? (isPaused ? 'Paused' : 'Live Reactive') : 'Stopped';
+    }
+
+    // Perbarui display badge di inspector jika ada instrumen yang sedang dipilih
     if (circuit?.selectedItem?.type === 'element') {
       const el = circuit.selectedItem.item;
       if (el.type === 'multimeter' && propDmmDisplayBadge) {
         propDmmDisplayBadge.textContent = el.displayReading || (isSimulating ? '0.00 V' : '--.--');
+      } else if (propInstrumentBadge && ['dc_voltmeter', 'dc_ammeter', 'ac_voltmeter', 'ac_ammeter', 'wattmeter', 'opamp', 'vcvs', 'vccs'].includes(el.type)) {
+        propInstrumentBadge.textContent = el.displayReading || (isSimulating ? '0.00' : '--.--');
       }
     }
   }
@@ -477,6 +561,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!circuit) return;
     const isSim = circuit.toggleSimulation();
     showToast(isSim ? 'Mode Simulasi Aktif: Perhitungan DC Berjalan' : 'Mode Simulasi Non-Aktif: Mode Desain / Skema');
+  });
+
+  // --- PROTEUS VSM TRANSPORT BAR LISTENERS (RUN, PAUSE, STOP) ---
+  btnSimRun?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!circuit) return;
+    circuit.startSimulation();
+    showToast('Simulasi Berjalan (Proteus Interactive Run)');
+  });
+
+  btnSimPause?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!circuit) return;
+    circuit.pauseSimulation();
+    showToast('Simulasi Dijeda (Paused)');
+  });
+
+  btnSimStop?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!circuit) return;
+    circuit.stopSimulation();
+    showToast('Simulasi Dihentikan (Stopped)');
+  });
+
+  // Listener Faktor Pengali VCVS Gain (μ)
+  propVcvsGain?.addEventListener('input', () => {
+    if (circuit?.selectedItem?.type === 'element') {
+      const el = circuit.selectedItem.item;
+      if (el.type === 'vcvs' || el.type === 'vccs') {
+        el.gain = parseFloat(propVcvsGain.value) || 1;
+        circuit.saveState(false);
+        if (circuit.isSimulating) {
+          circuit.runSimulation();
+        }
+        circuit.render();
+      }
+    }
   });
 
   // --- SAKLAR TOGGLE LISTENER ---

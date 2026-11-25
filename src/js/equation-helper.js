@@ -120,6 +120,47 @@ class EquationHelper {
         });
       }
 
+      // Pembacaan Instrumen Virtual Proteus
+      const voltmeters = elements.filter(e => e.type === 'dc_voltmeter' || e.type === 'ac_voltmeter');
+      if (voltmeters.length > 0) {
+        summaryText += `   * Pembacaan Voltmeter Proteus:\n`;
+        voltmeters.forEach(v => {
+          summaryText += `     - ${v.label}: ${v.displayReading || '--.--'}\n`;
+        });
+      }
+
+      const ammeters = elements.filter(e => e.type === 'dc_ammeter' || e.type === 'ac_ammeter');
+      if (ammeters.length > 0) {
+        summaryText += `   * Pembacaan Ammeter Proteus:\n`;
+        ammeters.forEach(a => {
+          summaryText += `     - ${a.label}: ${a.displayReading || '--.--'}\n`;
+        });
+      }
+
+      const wattmeters = elements.filter(e => e.type === 'wattmeter');
+      if (wattmeters.length > 0) {
+        summaryText += `   * Pembacaan Wattmeter Proteus:\n`;
+        wattmeters.forEach(w => {
+          summaryText += `     - ${w.label}: ${w.displayReading || '--.--'}\n`;
+        });
+      }
+
+      const opamps = elements.filter(e => e.type === 'opamp');
+      if (opamps.length > 0) {
+        summaryText += `   * Status Penguat Operasional (Op-Amp):\n`;
+        opamps.forEach(op => {
+          summaryText += `     - ${op.label} (${op.value || 'LM741'}): Vout = ${op.displayReading || '--.--'}\n`;
+        });
+      }
+
+      const vcvsList = elements.filter(e => e.type === 'vcvs');
+      if (vcvsList.length > 0) {
+        summaryText += `   * Sumber Terkendali (VCVS):\n`;
+        vcvsList.forEach(vc => {
+          summaryText += `     - ${vc.label}: Penguatan μ = ${vc.gain !== undefined ? vc.gain : 2}, Vout = ${vc.displayReading || '--.--'}\n`;
+        });
+      }
+
       if (canvas.simulationResults && canvas.simulationResults.elements && typeof CircuitSolver !== 'undefined') {
         summaryText += `   * Tegangan & Arus per Komponen:\n`;
         for (const [id, res] of canvas.simulationResults.elements) {
@@ -137,4 +178,9 @@ class EquationHelper {
   }
 }
 
-window.EquationHelper = EquationHelper;
+if (typeof window !== 'undefined') {
+  window.EquationHelper = EquationHelper;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = EquationHelper;
+}

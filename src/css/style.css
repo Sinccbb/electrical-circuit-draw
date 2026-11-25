@@ -450,3 +450,175 @@ body {
 .toast-msg.show {
   opacity: 1;
 }
+
+/* Proteus Virtual Instruments Toolbar Badges */
+.tool-meter {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.tool-meter:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.tool-meter.active {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #15803d;
+}
+
+.tool-ic {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.tool-ic:hover {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+}
+.tool-ic.active {
+  background: #f3e8ff;
+  border-color: #a855f7;
+  color: #6b21a8;
+}
+
+/* Proteus VSM Interactive Transport Simulation Bar */
+.proteus-transport-bar {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-top: none;
+  padding: 6px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  color: #f8fafc;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-transport {
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.btn-transport.run {
+  background: #064e3b;
+  border-color: #059669;
+  color: #a7f3d0;
+}
+.btn-transport.run:hover, .btn-transport.run.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+}
+
+.btn-transport.pause {
+  background: #78350f;
+  border-color: #d97706;
+  color: #fde68a;
+}
+.btn-transport.pause:hover, .btn-transport.pause.active {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+.btn-transport.stop {
+  background: #450a0a;
+  border-color: #dc2626;
+  color: #fecaca;
+}
+.btn-transport.stop:hover, .btn-transport.stop.active {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+.transport-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.status-led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #64748b;
+  transition: all 0.2s ease;
+}
+
+.status-led.running {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e, 0 0 12px rgba(34, 197, 94, 0.6);
+  animation: proteusPulse 1.8s infinite;
+}
+
+.status-led.paused {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.status-led.stopped {
+  background: #ef4444;
+}
+
+@keyframes proteusPulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.status-text {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-size: 10px;
+}
+
+.status-text.running {
+  color: #4ade80;
+}
+.status-text.paused {
+  color: #fbbf24;
+}
+.status-text.stopped {
+  color: #f87171;
+}
+
+.status-sep {
+  color: #334155;
+}
+
+.engine-badge {
+  color: #cbd5e1;
+  font-size: 10px;
+  font-family: monospace;
+}
+
+.sim-timer {
+  font-family: monospace;
+  font-size: 11px;
+  color: #38bdf8;
+  background: #1e293b;
+  padding: 1px 6px;
+  border-radius: 3px;
+}

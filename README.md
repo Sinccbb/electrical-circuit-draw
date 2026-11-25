@@ -1,96 +1,102 @@
 # CircuitLab Web
 
-Editor skema rangkaian listrik dan simulasi analisis berbasis web. Dirancang sederhana untuk membantu proses belajar, menggambar laporan tugas, corat-coret skema teori Kirchhoff, hingga simulasi perhitungan rangkaian nyata.
+Editor skema dan simulator analisis rangkaian listrik berbasis web. Dikembangkan secara mandiri untuk menemani proses belajar teori rangkaian listrik, mengerjakan tugas kuliah, membuat diagram laporan praktikum, hingga memverifikasi perhitungan melalui simulasi interaktif yang menyerupai Proteus VSM.
 
-Aplikasi ini berjalan murni di peramban (client-side) tanpa dependensi eksternal yang rumit, mendukung rumus matematika LaTeX secara langsung, dan memungkinkan diagram disalin dalam satu kali klik ke Microsoft Word atau Google Docs.
+Aplikasi ini berjalan seutuhnya di sisi peramban (client-side) tanpa ketergantungan pustaka server yang rumit, mendukung penulisan formula matematika LaTeX secara alami pada kanvas HTML5, dan menyediakan fitur salin instan diagram beresolusi tinggi ke Microsoft Word maupun Google Docs.
 
 ---
 
 ## Latar Belakang
 
-Sering kali saat kita sedang mempelajari analisis rangkaian listrik—seperti hukum Kirchhoff (KCL dan KVL), analisis mesh, atau teorema Thevenin—kita membutuhkan media yang fleksibel. Di satu sisi, kita butuh ruang untuk corat-coret: memberi panah asumsi arah arus, menggambar lintasan loop tertutup, dan menuliskan persamaan dengan simbol-simbol fisika seperti $\Omega$, $\mu\text{F}$, atau indeks subskrip. Di sisi lain, kita juga butuh kepastian apakah hitungan kita sudah benar melalui simulasi nyata.
+Ketika kita mempelajari mata kuliah Rangkaian Listrik—mulai dari hukum dasar Ohm dan Kirchhoff (KCL dan KVL), analisis simpul dan jerat (nodal & mesh analysis), teorema Thevenin dan Norton, rangkaian penguat operasional (Op-Amp), hingga sumber-sumber terkendali—kita sering kali menghadapi dua kebutuhan yang berbeda namun saling berkaitan:
 
-CircuitLab Web menggabungkan kedua kebutuhan tersebut ke dalam satu kanvas yang interaktif dan mudah dipakai.
+1. **Kebutuhan Menggambar dan Merumuskan Persamaan**: Kita perlu membuat skema yang bersih untuk laporan, menentukan arah panah arus asumsi cabang ($I_1, I_2, \dots$), menandai polaritas jatuh tegangan ($+/-$), menggambar lintasan loop tertutup, serta menuliskan nilai komponen dengan notasi ilmiah yang tepat seperti $\Omega$, $\text{k}\Omega$, $\mu\text{F}$, $\text{mH}$, hingga formula matematika bebas seperti $V_{th} = 12\ \text{V}$.
+2. **Kebutuhan Memverifikasi Hasil dengan Instrumen Pengukuran**: Setelah menghitung secara analitis di atas kertas, kita membutuhkan instrumen uji seperti Voltmeter, Ammeter, Wattmeter, atau Multimeter untuk memastikan apakah nilai tegangan simpul dan arus cabang yang kita dapatkan sudah benar.
+
+CircuitLab Web dirancang untuk menjembatani kedua kebutuhan tersebut dalam satu lingkungan kerja yang ringan, teratur, dan mudah digunakan.
 
 ---
 
 ## Fitur Utama
 
-### 1. Dua Mode Kerja: Corat-Coret Teori dan Simulasi Nyata
-Aplikasi ini menyediakan dua cara penggunaan yang bisa disesuaikan dengan kebutuhan:
-- **Mode Corat-Coret & Desain Teori**: Kamu bebas meletakkan komponen, menghubungkan kawat, memberi panah arah arus ($I_1, I_2, \dots$), menentukan arah loop KVL (searah atau berlawanan jarum jam), menandai polaritas tegangan ($+/-$), serta menambahkan catatan atau rumus matematika bebas.
-- **Mode Simulasi DC Interaktif**: Dengan menekan tombol *Mode Simulasi*, sistem perhitungan Modified Nodal Analysis (MNA) akan aktif. Tegangan tiap simpul dan arus cabang dihitung secara otomatis. Jika ada saklar yang dibuka atau ditutup, nilai-nilai tegangan dan arus langsung diperbarui seketika.
+### 1. Instrumen Virtual Proteus (Virtual Instruments)
+Aplikasi menyediakan rangkaian instrumen ukur mandiri yang dimodelkan mendekati karakteristik instrumen Proteus VSM:
+- **DC Voltmeter**: Instrumen penunjuk tegangan searah berimpedansi dalam tinggi ($10\text{ M}\Omega$). Dipasang secara paralel antar dua titik simpul untuk membaca beda potensial ($V_+ - V_-$). Dilengkapi label polaritas terminal merah $(+)$ dan hitam $(-)$ serta tampilan digital LCD.
+- **DC Ammeter**: Instrumen pengukur arus searah dengan drop tegangan mendekati nol ($0\text{ V}$, dipasang secara seri pada lintasan cabang). Menampilkan besar dan arah arus cabang secara presisi.
+- **AC Voltmeter & AC Ammeter**: Instrumen penunjuk nilai efektif (RMS) tegangan dan arus bolak-balik untuk analisis sinyal sinusoidal dan fasor.
+- **Wattmeter**: Instrumen daya nyata 4-terminal. Menggabungkan sensor arus seri ($I_+ / I_-$) dan sensor tegangan paralel ($V_+ / V_-$) untuk menghitung daya aktif $P = |V \times I|$ dalam satuan Watt.
+- **Digital Multimeter (DMM)**: Multimeter dengan kenop pemilih putar dan layar LED hijau. Mendukung empat mode kerja: Voltmeter DC, Amperemeter DC, Ohmmeter (pengukuran resistansi ekuivalen), dan Voltmeter AC.
 
-### 2. Saklar Interaktif (Switch ON / OFF)
-- Saklar memiliki status visual yang jelas: saat terbuka (OFF), tuas terangkat miring; saat tertutup (ON), tuas terhubung lurus mendatar dengan indikator hijau.
-- Kamu bisa mengubah kondisi saklar dengan memilih saklar lalu menekan tombol di panel properti, menekan tombol `Space` di papan ketik, atau cukup melakukan klik ganda pada saklar di kanvas.
-- Dalam mode simulasi, membuka atau menutup saklar langsung memutus atau mengalirkan arus listrik pada cabang tersebut.
+### 2. Komponen Khusus Rangkaian Listrik Kuliah
+Untuk memenuhi materi kuliah analisis rangkaian listrik tingkat sarjana, aplikasi menyertakan komponen-komponen penting:
+- **Penguat Operasional Ideal (Op-Amp LM741)**: Model op-amp 3-terminal dengan terminal inverting $(-)$, non-inverting $(+)$, dan keluaran $(out)$. Memenuhi prinsip hubung singkat virtual (*virtual short* $V_+ = V_-$) dengan resistansi masukan tak terhingga, cocok untuk rangkaian penguat pembalik (*inverting*), tak-pembalik (*non-inverting*), penjumlah (*summing*), dan penyangga (*buffer*).
+- **Sumber Terkendali / Dependen (VCVS & VCCS)**: Simbol belah ketupat (*diamond*) khas buku ajar rangkaian listrik untuk sumber tegangan terkendali tegangan (*Voltage-Controlled Voltage Source*) dan sumber arus terkendali tegangan. Faktor penguatan ($\mu$ atau $g_m$) dapat disesuaikan secara bebas melalui panel properti.
 
-### 3. Multimeter Digital (DMM)
-Tersedia komponen multimeter digital dengan dua terminal probe: probe merah $(+)$ di sebelah kiri dan probe hitam COM $(-)$ di sebelah kanan. Multimeter ini dilengkapi rotary dial dan layar LCD digital yang menampilkan hasil pengukuran:
-- **Voltmeter DC**: Mengukur beda potensial antara kedua titik ($V_+ - V_-$).
-- **Amperemeter DC**: Mengukur arus yang mengalir melalui cabang saat multimeter dipasang secara seri.
-- **Ohmmeter**: Mengukur resistansi ekuivalen antara kedua terminal.
-- **Voltmeter AC**: Mengukur nilai tegangan efektif (RMS).
+### 3. Mesin Simulasi Live Reactive & Kontrol Transport Proteus
+- **Perhitungan Seketika (Live Reactive)**: Mesin perhitungan Modified Nodal Analysis (MNA) berjalan secara kontinu di latar belakang. Begitu kawat selesai disambungkan ke terminal, komponen digeser, saklar diklik, atau nilai resistor diubah, seluruh tegangan simpul dan display pembacaan instrumen langsung terhitung dan terbarukan seketika tanpa perlu menekan tombol berulang kali.
+- **Transport Bar Proteus**: Terdapat panel kendali simulasi di bawah kanvas dengan tombol **Run** (hijau), **Pause** (kuning), dan **Stop** (merah), disertai indikator LED status dan keterangan mesin solver MNA.
+- **Indikator Titik Logika Tegangan (Logic Dots)**: Saat simulasi aktif, simpul berpotensial positif ditandai titik merah, simpul ground/nol bertitik abu-abu/hijau, dan simpul negatif bertitik biru pada kanvas.
 
-### 4. Pengaturan Posisi dan Rotasi Teks Komponen
-- Posisi label maupun nilai komponen tidak kaku. Kamu bisa mengatur posisinya ke arah atas, bawah, kiri, kanan, atau menggunakan penggeser koordinat untuk penyesuaian yang lebih halus.
-- Orientasi teks juga bisa diputar ($0^\circ, 90^\circ, 180^\circ, 270^\circ$) agar tetap mudah dibaca saat komponen diputar vertikal.
-- Walaupun posisi dan rotasi teks diatur secara bebas, teks tetap terikat secara dinamis pada komponen induknya. Ketika komponen digeser ke bagian kanvas yang lain, teks akan selalu ikut berpindah bersama komponen tersebut.
+### 4. Saklar Interaktif (Interactive Switch)
+- Saklar memiliki dua kondisi visual yang nyata: terbuka (*Open / OFF*) dengan tuas terangkat miring, dan tertutup (*Closed / ON*) dengan tuas terhubung mendatar.
+- Kondisi saklar dapat diubah dengan melakukan klik ganda langsung pada saklar di kanvas, menekan tombol `Space` saat saklar dipilih, atau melalui tombol inspector.
+- Membuka saklar memutus arus pada cabang tersebut ($I = 0\text{ A}$), sementara menutup saklar mengalirkan kembali arus rangkaian.
 
 ### 5. Sambungan Kawat Fleksibel (Draw.io Style)
-- **Koneksi Magnetik Ujung ke Ujung**: Saat mendekatkan ujung kawat ke komponen, kursor otomatis mengunci tepat pada terminal kaki komponen (bukan di tengah badan komponen).
-- **Kabel Mengikuti Komponen**: Begitu kawat tersambung ke terminal, kawat tersebut terikat secara permanen. Jika kamu menggeser resistor atau sumber tegangan, kabel yang terhubung akan otomatis memanjang, memendek, dan mengikuti pergerakan tersebut.
-- **Kawat Lengkung yang Fleksibel**: Kamu bisa menggunakan kawat melengkung untuk menghubungkan dua simpul yang sebenarnya sama tanpa memotong jalur kawat lainnya. Lengkungan bisa diarahkan ke atas maupun ke bawah, baik dengan menggeser titik kontrol biru di kanvas, melalui slider inspector, atau dengan menekan tombol `R`.
+- **Koneksi Magnetik Ujung Terminal**: Kawat otomatis mengunci tepat pada ujung pin terminal komponen (bukan di tengah badan komponen).
+- **Kabel Dinamis Mengikuti Komponen**: Kawat yang telah tersambung akan tetap menempel secara kokoh pada kaki komponen. Menggeser resistor atau baterai akan otomatis membuat kawat memanjang atau memendek mengikuti pergeseran tersebut.
+- **Kawat Lengkung (Curved Jumper)**: Memudahkan perapian gambar diagram ketika ada kawat yang menghubungkan simpul jauh atau simpul ground bersama tanpa bersilangan kaku dengan komponen lain. Lengkungan dapat diarahkan melengkung ke atas maupun ke bawah melalui slider inspector, tombol `R`, atau menarik titik kontrol biru pada kawat.
 
-### 6. Dukungan LaTeX Alami (Native Canvas)
-- Semua label, nilai komponen, dan teks bebas mendukung format penulisan LaTeX menggunakan tanda `$...$`.
-- Penulisan simbol seperti `$R_1$`, `$C_{eq}$`, `$V_{in}$`, `$10\ \Omega$`, `$100\ \mu\text{F}$`, hingga persamaan matematika seperti `$V_{th} = 12\ \text{V}$` dirender langsung menggunakan mesin tipografi vektor pada kanvas. Teks tampil tajam dan tidak akan hilang saat diekspor.
+### 6. Pengaturan Posisi dan Rotasi Label Komponen
+- Posisi teks nama ($R_1$) dan nilai ($10\ \Omega$) dapat diposisikan ke arah atas, bawah, kiri, atau kanan komponen sesuai kerapian diagram.
+- Teks label juga dapat dirotasi ($0^\circ, 90^\circ, 180^\circ, 270^\circ$) agar tetap tegak terbaca meskipun komponen dipasang dalam posisi vertikal.
+- Seluruh teks tetap terikat secara dinamis pada komponen induknya saat komponen dipindahkan.
 
-### 7. Navigasi Kanvas yang Leluasa
-- **Menggeser Kanvas (Pan)**: Kamu bisa menggeser kanvas dengan klik dan tahan pada area kosong, menahan tombol `Spasi` sambil menggeser mouse, atau menggunakan klik roda tengah mouse.
-- **Perbesaran (Zoom)**: Gunakan roda gulir (scroll) mouse atau tombol navigasi di pojok kanan bawah (`+`, `−`, `Fit`, `1:1`) untuk melihat detail komponen atau memuat seluruh rangkaian ke layar.
+### 7. Tipografi Formula LaTeX Alami pada Kanvas
+- Penulisan label, nilai besaran, maupun anotasi bebas mendukung format LaTeX dengan penanda `$...$`.
+- Simbol satuan fisika seperti $\Omega$, $\mu\text{F}$, $\text{mH}$, subskrip $V_{in}$, $I_{total}$, hingga persamaan diferensial awal dirender langsung secara vektor pada kanvas sehingga tampak jernih dan tidak mengalami distorsi saat diekspor.
 
-### 8. Integrasi Cepat ke Dokumen (Word dan Docs)
-- **Salin Diagram**: Klik tombol *Salin Diagram ke Word*, lalu tekan `Ctrl + V` di Microsoft Word, Google Docs, atau aplikasi pengolah kata lainnya. Gambar disalin dengan resolusi tinggi (2x crisp retina) dan terpotong rapi sesuai batas rangkaian (*auto-crop*).
-- **Salin Analisis**: Teks rangkuman perumusan KCL, KVL, dan status pengukuran sirkuit dapat disalin langsung ke badan tulisan laporan.
-- **Unduh PNG**: Kamu juga bisa menyimpan berkas gambar ke penyimpanan lokal komputer kapan saja.
+### 8. Penyalinan Cepat ke Dokumen (Word dan Docs)
+- **Salin Diagram**: Tombol *Salin Diagram ke Word* menyalin gambar diagram rangkaian format PNG beresolusi tinggi (2x crisp retina) ke clipboard sistem dalam batas gambar yang terpotong otomatis (*auto-crop*). Cukup tekan `Ctrl + V` pada dokumen tugas Microsoft Word atau Google Docs.
+- **Salin Analisis**: Teks rangkuman data komponen, perumusan hukum Kirchhoff I & II, dan pembacaan instrumen ukur dapat disalin langsung ke lembar kerja laporan.
+- **Unduh PNG**: Berkas gambar diagram dapat diunduh ke media penyimpanan komputer.
 
 ---
 
-## Petunjuk Penggunaan Singkat
+## Pintasan Papan Ketik (Keyboard Shortcuts)
 
 | Tombol / Aksi | Fungsi |
 |---|---|
-| **Klik Kiri** | Memilih komponen, menarik kawat, atau menaruh komponen |
-| **Klik Kanan** | Membatalkan penarikan kawat atau kembali ke alat pilih (Select) |
-| **Tombol `R`** | Memutar komponen $90^\circ$ sebelum ditaruh atau membalik arah kawat lengkung |
-| **Tombol `Space`** | Menahan untuk menggeser kanvas (atau membuka/menutup saklar yang sedang dipilih) |
-| **Tombol Panah** | Menggeser posisi komponen yang sedang dipilih secara presisi di atas grid |
-| **Scroll Mouse** | Memperbesar atau memperkecil tampilan kanvas (Zoom In / Zoom Out) |
+| **Klik Kiri** | Memilih komponen, menarik jalur kawat, atau menaruh komponen pada posisi kursor |
+| **Klik Kanan** | Membatalkan penarikan kawat atau kembali ke alat penunjuk (Select) |
+| **Tombol `R`** | Memutar orientasi komponen $90^\circ$ atau membalik arah kelengkungan kawat |
+| **Tombol `Space`** | Menahan tombol untuk menggeser kanvas (atau membuka/menutup saklar yang terpilih) |
+| **Tombol Panah** | Menggeser posisi komponen terpilih langkah demi langkah di atas kisi grid |
+| **Scroll Mouse** | Memperbesar atau memperkecil tampilan area kerja kanvas (Zoom In / Zoom Out) |
 | **Klik Ganda Saklar** | Membuka atau menutup saklar secara langsung |
-| **`Ctrl + Z` / `Ctrl + Y`** | Membatalkan (Undo) atau mengulangi (Redo) tindakan terakhir |
+| **`Ctrl + Z` / `Ctrl + Y`** | Membatalkan (Undo) atau mengulangi (Redo) tindakan pengeditan |
 
 ---
 
-## Menjalankan secara Mandiri
+## Menjalankan Aplikasi
 
-Karena proyek ini tidak membutuhkan instalasi dependensi yang rumit, kamu bisa menjalankannya dengan sangat mudah:
+Aplikasi ini tidak memerlukan instalasi perangkat lunak tambahan maupun runtime khusus:
 
-1. Unduh atau clone repositori ini ke komputer kamu:
+1. Unduh atau clone repositori ini:
    ```bash
    git clone https://github.com/username/electrical-circuit-draw.git
    cd electrical-circuit-draw
    ```
-2. Buka berkas `src/index.html` langsung di peramban favoritmu (Chrome, Edge, Firefox, dsb.), atau gunakan server statis sederhana jika ingin mengaksesnya melalui localhost:
+2. Buka berkas `src/index.html` secara langsung pada peramban web modern (Google Chrome, Microsoft Edge, Mozilla Firefox, Safari, atau Opera).
+3. Jika ingin menyajikannya melalui server lokal sederhana:
    ```bash
-   # Menggunakan Node.js
+   # Melalui Node.js
    npx serve src
 
-   # Atau menggunakan Python
+   # Atau melalui Python
    python -m http.server 3000 --directory src
    ```
-3. Buka alamat `http://localhost:3000` pada peramban.
+4. Akses melalui alamat `http://localhost:3000`.
 
 ---
 
@@ -100,21 +106,21 @@ Karena proyek ini tidak membutuhkan instalasi dependensi yang rumit, kamu bisa m
 electrical-circuit-draw/
 ├── src/
 │   ├── css/
-│   │   └── style.css            # Gaya visual antarmuka dan panel
+│   │   └── style.css            # Desain tata letak, panel kontrol, dan gaya Proteus Transport Bar
 │   ├── js/
-│   │   ├── app.js               # Pengendali utama antarmuka pengguna
-│   │   ├── circuit-canvas.js    # Mesin kanvas, rendering komponen, dan penanganan interaksi
-│   │   ├── circuit-solver.js    # Mesin simulasi rangkaian DC (Modified Nodal Analysis)
-│   │   ├── latex-renderer.js    # Mesin rendering formula LaTeX vektor pada HTML5 Canvas
-│   │   ├── equation-helper.js   # Generator rangkuman analisis KCL, KVL, dan simulasi
-│   │   ├── presets.js           # Contoh rangkaian awal (Divider, Wheatstone, 2-Loop)
+│   │   ├── app.js               # Pengendali utama antarmuka pengguna dan interaksi tombol
+│   │   ├── circuit-canvas.js    # Mesin kanvas, rendering komponen, interaksi kawat, dan visual Proteus
+│   │   ├── circuit-solver.js    # Mesin analisis rangkaian MNA linier (Modified Nodal Analysis)
+│   │   ├── latex-renderer.js    # Mesin rendering formula tipografi LaTeX vektor
+│   │   ├── equation-helper.js   # Penyusun rangkuman analisis Kirchhoff dan hasil pengukuran instrumen
+│   │   ├── presets.js           # Contoh rangkaian kuliah (Kirchhoff 2-Loop, Divider, Wheatstone, Proteus Meters, Op-Amp)
 │   │   └── clipboard-helper.js  # Utilitas penyalinan diagram dan teks ke papan klip
-│   └── index.html               # Halaman utama aplikasi
-└── README.md                    # Dokumentasi proyek
+│   └── index.html               # Halaman utama aplikasi dan panel inspeksi
+└── README.md                    # Dokumentasi panduan penggunaan proyek
 ```
 
 ---
 
 ## Lisensi
 
-Proyek ini dirilis di bawah lisensi [MIT](LICENSE). Bebas digunakan, dipelajari, maupun dikembangkan lebih lanjut untuk keperluan akademis maupun personal.
+Proyek ini didistribusikan di bawah lisensi [MIT](LICENSE). Terbuka untuk digunakan, dipelajari, dan dikembangkan lebih lanjut guna menunjang kegiatan pembelajaran dan akademis.

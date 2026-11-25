@@ -223,14 +223,47 @@ class CircuitSolver {
             value: 0
           });
         }
-      } else if (el.type === 'multimeter') {
-        const mode = el.meterMode || 'voltage_dc';
-        if (mode === 'current_dc' && terms.length >= 2) {
-          // Amperemeter ideal = beda potensial 0 V
+      } else if (el.type === 'dc_ammeter' || el.type === 'ac_ammeter') {
+        if (terms.length >= 2) {
+          // Ammeter Proteus ideal = drop 0 V (seri)
           vSources.push({
             el,
             nodePos: getNodeOfTerminal(terms[0].id),
             nodeNeg: getNodeOfTerminal(terms[1].id),
+            value: 0
+          });
+        }
+      } else if (el.type === 'wattmeter') {
+        if (terms.length >= 2) {
+          // Terminal 0 & 1 adalah sensor arus seri (0 V)
+          vSources.push({
+            el,
+            nodePos: getNodeOfTerminal(terms[0].id),
+            nodeNeg: getNodeOfTerminal(terms[1].id),
+            value: 0
+          });
+        }
+      } else if (el.type === 'vcvs') {
+        // Sumber Tegangan Dependen
+        if (terms.length >= 2) {
+          const val = this.parseValue(el.value, 10);
+          vSources.push({
+            el,
+            nodePos: getNodeOfTerminal(terms[0].id),
+            nodeNeg: getNodeOfTerminal(terms[1].id),
+            value: val
+          });
+        }
+      } else if (el.type === 'opamp') {
+        // Op-Amp Ideal: Output (terms[2]) ke ground acuan (0)
+        if (terms.length >= 3) {
+          vSources.push({
+            el,
+            isOpAmp: true,
+            nodePos: getNodeOfTerminal(terms[2].id), // output
+            nodeNeg: 0,
+            nodeInverting: getNodeOfTerminal(terms[0].id),
+            nodeNonInverting: getNodeOfTerminal(terms[1].id),
             value: 0
           });
         }
@@ -279,6 +312,15 @@ class CircuitSolver {
         const iVal = this.parseValue(el.value, 2);
         if (n1 !== 0) z[nIdx(n1)] += iVal;
         if (n2 !== 0) z[nIdx(n2)] -= iVal;
+      } else if (el.type === 'dc_voltmeter' || el.type === 'ac_voltmeter') {
+        const g = 1e-7; // 10 Megaohm (voltmeter paralel)
+        this.addConductance(A, n1, n2, g);
+      } else if (el.type === 'wattmeter') {
+        if (terms.length >= 4) {
+          const nv1 = getNodeOfTerminal(terms[2].id);
+          const nv2 = getNodeOfTerminal(terms[3].id);
+          this.addConductance(A, nv1, nv2, 1e-7);
+        }
       } else if (el.type === 'multimeter') {
         const mode = el.meterMode || 'voltage_dc';
         if (mode === 'voltage_dc' || mode === 'voltage_ac') {
@@ -306,16 +348,24 @@ class CircuitSolver {
       const nPos = vs.nodePos;
       const nNeg = vs.nodeNeg;
 
-      if (nPos !== 0) {
-        A[nIdx(nPos)][row] += 1;
-        A[row][nIdx(nPos)] += 1;
+      if (vs.isOpAmp) {
+        const nNonInv = vs.nodeNonInverting;
+        const nInv = vs.nodeInverting;
+        if (nNonInv !== 0) A[row][nIdx(nNonInv)] += 1;
+        if (nInv !== 0) A[row][nIdx(nInv)] -= 1;
+        if (nPos !== 0) A[nIdx(nPos)][row] += 1;
+        z[row] = 0;
+      } else {
+        if (nPos !== 0) {
+          A[nIdx(nPos)][row] += 1;
+          A[row][nIdx(nPos)] += 1;
+        }
+        if (nNeg !== 0) {
+          A[nIdx(nNeg)][row] -= 1;
+          A[row][nIdx(nNeg)] -= 1;
+        }
+        z[row] = vs.value;
       }
-      if (nNeg !== 0) {
-        A[nIdx(nNeg)][row] -= 1;
-        A[row][nIdx(nNeg)] -= 1;
-      }
-
-      z[row] = vs.value;
     }
 
     // 4. Selesaikan SPL A * x = z dengan Eliminasi Gauss (Partial Pivoting)
@@ -338,7 +388,7 @@ class CircuitSolver {
       vs.current = current;
     }
 
-    // 5. Hitung pembacaan untuk setiap komponen & multimeter
+    // 5. Hitung pembacaan untuk setiap komponen & instrumen Proteus
     for (const el of elements) {
       const terms = circuitInstance.getTerminals(el);
       if (terms.length >= 2) {
@@ -352,7 +402,7 @@ class CircuitSolver {
         if (el.type === 'resistor') {
           const rVal = Math.max(1e-4, this.parseValue(el.value, 10));
           branchCurrent = vDrop / rVal;
-        } else if (el.type === 'vsource_dc') {
+        } else if (el.type === 'vsource_dc' || el.type === 'vcvs') {
           const matched = vSources.find(v => v.el.id === el.id);
           branchCurrent = matched ? matched.current : 0;
         } else if (el.type === 'switch') {
@@ -363,6 +413,36 @@ class CircuitSolver {
           } else {
             branchCurrent = 0;
           }
+        } else if (el.type === 'dc_voltmeter') {
+          el.displayReading = this.formatMeasurement(vDrop, 'V');
+          branchCurrent = vDrop * 1e-7;
+        } else if (el.type === 'ac_voltmeter') {
+          el.displayReading = this.formatMeasurement(Math.abs(vDrop), 'V~');
+          branchCurrent = Math.abs(vDrop) * 1e-7;
+        } else if (el.type === 'dc_ammeter') {
+          const matched = vSources.find(v => v.el.id === el.id);
+          branchCurrent = matched ? matched.current : 0;
+          el.displayReading = this.formatMeasurement(branchCurrent, 'A');
+        } else if (el.type === 'ac_ammeter') {
+          const matched = vSources.find(v => v.el.id === el.id);
+          branchCurrent = matched ? Math.abs(matched.current) : 0;
+          el.displayReading = this.formatMeasurement(branchCurrent, 'A~');
+        } else if (el.type === 'wattmeter') {
+          const matched = vSources.find(v => v.el.id === el.id);
+          const iMeas = matched ? Math.abs(matched.current) : 0;
+          let vMeas = 0;
+          if (terms.length >= 4) {
+            const nv1 = nodeVoltages[getNodeOfTerminal(terms[2].id)] || 0;
+            const nv2 = nodeVoltages[getNodeOfTerminal(terms[3].id)] || 0;
+            vMeas = nv1 - nv2;
+          }
+          const pVal = Math.abs(vMeas * iMeas);
+          el.displayReading = this.formatMeasurement(pVal, 'W');
+          branchCurrent = iMeas;
+        } else if (el.type === 'opamp') {
+          const nOut = terms[2] ? getNodeOfTerminal(terms[2].id) : null;
+          const vOut = nOut !== null ? (nodeVoltages[nOut] || 0) : 0;
+          el.displayReading = this.formatMeasurement(vOut, 'V');
         } else if (el.type === 'multimeter') {
           const mode = el.meterMode || 'voltage_dc';
           if (mode === 'voltage_dc') {
