@@ -37,10 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const simBtnIcon = document.getElementById('sim-btn-icon');
   const simBtnText = document.getElementById('sim-btn-text');
 
-  // Proteus VSM Transport Controls
+  // Proteus VSM Transport Controls & Falstad Flow
   const btnSimRun = document.getElementById('btn-sim-run');
   const btnSimPause = document.getElementById('btn-sim-pause');
   const btnSimStop = document.getElementById('btn-sim-stop');
+  const btnToggleParticles = document.getElementById('btn-toggle-particles');
+  const particleBtnText = document.getElementById('particle-btn-text');
   const simStatusLed = document.getElementById('sim-status-led');
   const simStatusText = document.getElementById('sim-status-text');
   const simTimerDisplay = document.getElementById('sim-timer-display');
@@ -280,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnToggleSim.style.borderColor = '#ef4444';
         btnToggleSim.style.color = '#991b1b';
         if (simBtnIcon) simBtnIcon.textContent = '⏹️';
-        if (simBtnText) simBtnText.textContent = 'Mode Simulasi: ON';
+        if (simBtnText) simBtnText.textContent = 'Mode Simulasi: ON (Terkunci)';
       } else {
         btnToggleSim.style.background = '#ecfdf5';
         btnToggleSim.style.borderColor = '#10b981';
@@ -289,6 +291,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (simBtnText) simBtnText.textContent = 'Mode Simulasi: OFF';
       }
     }
+
+    // Kunci Toolbar dan Tombol Modifikasi saat Simulasi Aktif
+    const toolbar = document.querySelector('.toolbar-container');
+    if (toolbar) {
+      toolbar.classList.toggle('sim-locked', isSimulating);
+    }
+
+    const actionBtns = [
+      document.getElementById('btn-rotate'),
+      document.getElementById('btn-undo'),
+      document.getElementById('btn-redo'),
+      document.getElementById('btn-delete'),
+      document.getElementById('btn-clear')
+    ];
+    actionBtns.forEach(btn => {
+      if (btn) {
+        btn.disabled = isSimulating;
+        btn.style.opacity = isSimulating ? '0.45' : '1';
+        btn.style.cursor = isSimulating ? 'not-allowed' : 'pointer';
+      }
+    });
+
+    // Kunci input editing di panel inspector (kecuali saklar dan multimeter yang interaktif)
+    const editableInputs = [
+      propLabel, propValue, propCurve, propTextContent, propTextSize, propTextColor,
+      propLabelOffsetX, propLabelOffsetY, btnPosTop, btnPosBottom, btnPosLeft, btnPosRight,
+      btnPosReset, btnRotateLabel, btnFlipCurve, btnCurveUp, btnCurveDown, propDirection, propSign
+    ];
+    editableInputs.forEach(inp => {
+      if (inp) {
+        inp.disabled = isSimulating;
+        if (inp.style) inp.style.opacity = isSimulating ? '0.6' : '1';
+      }
+    });
 
     // Proteus VSM Transport Bar State
     const isPaused = circuit && circuit.isPaused;
@@ -300,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!isSimulating) {
         simStatusLed.className = 'status-led stopped';
         simStatusText.className = 'status-text stopped';
-        simStatusText.textContent = 'SIMULATION STOPPED';
+        simStatusText.textContent = 'SIMULATION STOPPED (Edit Mode)';
       } else if (isPaused) {
         simStatusLed.className = 'status-led paused';
         simStatusText.className = 'status-text paused';
@@ -308,12 +344,20 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         simStatusLed.className = 'status-led running';
         simStatusText.className = 'status-text running';
-        simStatusText.textContent = 'SIMULATION RUNNING';
+        simStatusText.textContent = 'SIMULATION RUNNING (Locked)';
       }
     }
 
     if (simTimerDisplay) {
-      simTimerDisplay.textContent = isSimulating ? (isPaused ? 'Paused' : 'Live Reactive') : 'Stopped';
+      simTimerDisplay.textContent = isSimulating ? (isPaused ? 'Paused' : 'Live Reactive') : 'Standby';
+    }
+
+    // Perbarui status tombol partikel arus
+    if (btnToggleParticles && circuit) {
+      btnToggleParticles.classList.toggle('active', circuit.showCurrentParticles);
+      if (particleBtnText) {
+        particleBtnText.textContent = circuit.showCurrentParticles ? 'Aliran Arus: ON' : 'Aliran Arus: OFF';
+      }
     }
 
     // Perbarui display badge di inspector jika ada instrumen yang sedang dipilih
@@ -335,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onSelectionChange: handleSelectionChange,
     onCircuitChange: handleCircuitChange,
     onSimulationChange: handleSimulationChange,
+    onBlockedEdit: (msg) => showToast(msg),
     onCurveChange: (offset) => {
       if (propCurve) propCurve.value = offset;
       if (propCurveVal) propCurveVal.textContent = (offset > 0 ? '+' : '') + offset + ' px';
@@ -582,7 +627,20 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (!circuit) return;
     circuit.stopSimulation();
-    showToast('Simulasi Dihentikan (Stopped)');
+    showToast('Simulasi Dihentikan (Mode Desain Terbuka)');
+  });
+
+  // Toggle Partikel Aliran Arus Bergerak (Falstad Current Flow)
+  btnToggleParticles?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!circuit) return;
+    circuit.showCurrentParticles = !circuit.showCurrentParticles;
+    btnToggleParticles.classList.toggle('active', circuit.showCurrentParticles);
+    if (particleBtnText) {
+      particleBtnText.textContent = circuit.showCurrentParticles ? 'Aliran Arus: ON' : 'Aliran Arus: OFF';
+    }
+    circuit.render();
+    showToast(circuit.showCurrentParticles ? 'Visualisasi Aliran Arus Aktif (Falstad Flow)' : 'Visualisasi Aliran Arus Dinonaktifkan');
   });
 
   // Listener Faktor Pengali VCVS Gain (μ)

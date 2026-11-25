@@ -468,6 +468,9 @@ class CircuitSolver {
       }
     }
 
+    // 6. Hitung besar dan arah arus pada setiap segmen kawat (Falstad Current Engine)
+    this.solveWireCurrents(wires, elements, terminals, elementsResult, circuitInstance);
+
     return {
       success: true,
       solved: true,
@@ -476,6 +479,188 @@ class CircuitSolver {
       elements: elementsResult,
       message: 'Simulasi berhasil dihitung.'
     };
+  }
+
+  /**
+   * Menghitung arus listrik yang mengalir di setiap segmen kawat menggunakan Hukum Kirchhoff (KCL).
+   * Menentukan besar dan arah arus secara presisi untuk animasi partikel gaya Falstad.
+   */
+  static solveWireCurrents(wires, elements, terminals, elementsResult, circuitInstance) {
+    if (!wires || wires.length === 0) return;
+
+    // Reset arus pada semua kawat
+    for (const w of wires) {
+      w.current = 0;
+    }
+
+    // 1. Kumpulkan arus terminal yang diinjeksikan ke jaringan kawat
+    // Map: terminalId -> injected current (A)
+    const terminalInjection = new Map();
+    for (const el of elements) {
+      const elRes = elementsResult.get(el.id);
+      const branchCur = elRes ? elRes.current : 0;
+      const terms = circuitInstance.getTerminals(el);
+
+      if (['resistor', 'switch', 'dc_ammeter', 'ac_ammeter'].includes(el.type)) {
+        if (terms.length >= 2) {
+          // branchCurrent mengalir dari terminal 0 ke terminal 1 di dalam komponen.
+          // Jadi pada terminal 0: arus KELUAR dari kawat masuk ke komponen => injection = -branchCur
+          // Pada terminal 1: arus KELUAR dari komponen masuk ke kawat => injection = +branchCur
+          terminalInjection.set(terms[0].id, -branchCur);
+          terminalInjection.set(terms[1].id, +branchCur);
+        }
+      } else if (el.type === 'vsource_dc' || el.type === 'vsource_ac') {
+        if (terms.length >= 2) {
+          // Baterai: kutub positif (terms[0]) memompakan arus keluar ke kawat
+          const pumpCurrent = -branchCur;
+          terminalInjection.set(terms[0].id, pumpCurrent);
+          terminalInjection.set(terms[1].id, -pumpCurrent);
+        }
+      } else if (el.type === 'isource_dc') {
+        if (terms.length >= 2) {
+          const iVal = this.parseValue(el.value, 2);
+          terminalInjection.set(terms[0].id, -iVal);
+          terminalInjection.set(terms[1].id, iVal);
+        }
+      } else if (el.type === 'multimeter') {
+        const mode = el.meterMode || 'voltage_dc';
+        if (mode === 'current_dc' && terms.length >= 2) {
+          terminalInjection.set(terms[0].id, -branchCur);
+          terminalInjection.set(terms[1].id, +branchCur);
+        }
+      } else if (el.type === 'wattmeter') {
+        if (terms.length >= 2) {
+          terminalInjection.set(terms[0].id, -branchCur);
+          terminalInjection.set(terms[1].id, +branchCur);
+        }
+      } else if (el.type === 'opamp') {
+        if (terms.length >= 3) {
+          terminalInjection.set(terms[2].id, branchCur);
+        }
+      }
+    }
+
+    // 2. Buat cluster titik sambung (junction vertices) untuk kawat
+    const vertices = [];
+    const getOrCreateVertex = (x, y) => {
+      for (let i = 0; i < vertices.length; i++) {
+        if (Math.hypot(vertices[i].x - x, vertices[i].y - y) <= 12) {
+          return i;
+        }
+      }
+      const newIdx = vertices.length;
+      vertices.push({ id: newIdx, x, y, injectedCurrent: 0 });
+      return newIdx;
+    };
+
+    const wireEdges = [];
+    for (let i = 0; i < wires.length; i++) {
+      const w = wires[i];
+      const v1 = getOrCreateVertex(w.x1, w.y1);
+      const v2 = getOrCreateVertex(w.x2, w.y2);
+      wireEdges.push({ wire: w, v1, v2 });
+    }
+
+    // Kaitkan terminal ke vertex kawat terdekat
+    for (const t of terminals) {
+      const inj = terminalInjection.get(t.id) || 0;
+      if (Math.abs(inj) > 1e-9) {
+        for (let i = 0; i < vertices.length; i++) {
+          if (Math.hypot(vertices[i].x - t.x, vertices[i].y - t.y) <= 18) {
+            vertices[i].injectedCurrent += inj;
+            break;
+          }
+        }
+      }
+    }
+
+    // 3. Kelompokkan graf kawat menjadi connected components
+    const adj = Array.from({ length: vertices.length }, () => []);
+    for (const edge of wireEdges) {
+      adj[edge.v1].push({ neighbor: edge.v2, edge });
+      adj[edge.v2].push({ neighbor: edge.v1, edge });
+    }
+
+    const visited = new Array(vertices.length).fill(false);
+    for (let startV = 0; startV < vertices.length; startV++) {
+      if (visited[startV]) continue;
+
+      const compVertices = [];
+      const queue = [startV];
+      visited[startV] = true;
+
+      while (queue.length > 0) {
+        const u = queue.shift();
+        compVertices.push(u);
+        for (const item of adj[u]) {
+          if (!visited[item.neighbor]) {
+            visited[item.neighbor] = true;
+            queue.push(item.neighbor);
+          }
+        }
+      }
+
+      if (compVertices.length <= 1) continue;
+
+      let hasCurrent = false;
+      for (const vIdx of compVertices) {
+        if (Math.abs(vertices[vIdx].injectedCurrent) > 1e-6) {
+          hasCurrent = true;
+          break;
+        }
+      }
+      if (!hasCurrent) continue;
+
+      const M = compVertices.length;
+      const vMap = new Map();
+      compVertices.forEach((vIdx, i) => vMap.set(vIdx, i));
+
+      const G = Array.from({ length: M }, () => new Array(M).fill(0));
+      const I_vec = new Array(M).fill(0);
+
+      for (let i = 0; i < M; i++) {
+        const globalV = compVertices[i];
+        I_vec[i] = vertices[globalV].injectedCurrent;
+      }
+
+      for (const edge of wireEdges) {
+        if (vMap.has(edge.v1) && vMap.has(edge.v2)) {
+          const i1 = vMap.get(edge.v1);
+          const i2 = vMap.get(edge.v2);
+          if (i1 !== i2) {
+            const conductance = 1.0;
+            G[i1][i1] += conductance;
+            G[i2][i2] += conductance;
+            G[i1][i2] -= conductance;
+            G[i2][i1] -= conductance;
+          }
+        }
+      }
+
+      // Gunakan vertex 0 sebagai acuan dalam sub-graf ini
+      const G_sub = Array.from({ length: M - 1 }, () => new Array(M - 1).fill(0));
+      const I_sub = new Array(M - 1).fill(0);
+      for (let i = 1; i < M; i++) {
+        I_sub[i - 1] = I_vec[i];
+        for (let j = 1; j < M; j++) {
+          G_sub[i - 1][j - 1] = G[i][j];
+        }
+      }
+
+      const phi_sub = this.solveLinearSystem(G_sub, I_sub);
+      if (phi_sub) {
+        const phi = [0, ...phi_sub];
+        for (const edge of wireEdges) {
+          if (vMap.has(edge.v1) && vMap.has(edge.v2)) {
+            const i1 = vMap.get(edge.v1);
+            const i2 = vMap.get(edge.v2);
+            // I_w dari v1 ke v2
+            const iWire = phi[i1] - phi[i2];
+            edge.wire.current = iWire;
+          }
+        }
+      }
+    }
   }
 
   static addConductance(A, n1, n2, g) {

@@ -186,23 +186,26 @@
       <!-- Proteus VSM Interactive Transport Simulation Bar -->
       <div class="proteus-transport-bar">
         <div class="transport-controls">
-          <button id="btn-sim-run" class="btn-transport run active" title="Jalankan Simulasi Interaktif Proteus (Live Analysis)">
+          <button id="btn-sim-run" class="btn-transport run" title="Jalankan Simulasi Interaktif (Live Falstad & Proteus)">
             <span class="transport-icon">▶</span> Run
           </button>
           <button id="btn-sim-pause" class="btn-transport pause" title="Jeda Simulasi">
             <span class="transport-icon">⏸</span> Pause
           </button>
-          <button id="btn-sim-stop" class="btn-transport stop" title="Hentikan Simulasi">
+          <button id="btn-sim-stop" class="btn-transport stop active" title="Hentikan Simulasi (Buka Kunci untuk Desain/Edit)">
             <span class="transport-icon">⏹</span> Stop
+          </button>
+          <button id="btn-toggle-particles" class="btn-transport particle active" title="Tampilkan / Sembunyikan Arah Aliran Arus Bergerak (Gaya Falstad)">
+            <span class="transport-icon">⚡</span> <span id="particle-btn-text">Aliran Arus: ON</span>
           </button>
         </div>
         <div class="transport-status">
-          <span id="sim-status-led" class="status-led running"></span>
-          <span id="sim-status-text" class="status-text">SIMULATION RUNNING</span>
+          <span id="sim-status-led" class="status-led stopped"></span>
+          <span id="sim-status-text" class="status-text stopped">SIMULATION STOPPED (Edit Mode)</span>
           <span class="status-sep">|</span>
-          <span class="engine-badge">Engine: Proteus MNA Solver (Kuliah Rangkaian Listrik)</span>
+          <span class="engine-badge">Engine: Proteus MNA & Falstad Flow</span>
           <span class="status-sep">|</span>
-          <span id="sim-timer-display" class="sim-timer">Live Reactive</span>
+          <span id="sim-timer-display" class="sim-timer">Standby</span>
         </div>
       </div>
     </main>

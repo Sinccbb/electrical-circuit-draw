@@ -32,31 +32,43 @@ Untuk memenuhi materi kuliah analisis rangkaian listrik tingkat sarjana, aplikas
 - **Penguat Operasional Ideal (Op-Amp LM741)**: Model op-amp 3-terminal dengan terminal inverting $(-)$, non-inverting $(+)$, dan keluaran $(out)$. Memenuhi prinsip hubung singkat virtual (*virtual short* $V_+ = V_-$) dengan resistansi masukan tak terhingga, cocok untuk rangkaian penguat pembalik (*inverting*), tak-pembalik (*non-inverting*), penjumlah (*summing*), dan penyangga (*buffer*).
 - **Sumber Terkendali / Dependen (VCVS & VCCS)**: Simbol belah ketupat (*diamond*) khas buku ajar rangkaian listrik untuk sumber tegangan terkendali tegangan (*Voltage-Controlled Voltage Source*) dan sumber arus terkendali tegangan. Faktor penguatan ($\mu$ atau $g_m$) dapat disesuaikan secara bebas melalui panel properti.
 
-### 3. Mesin Simulasi Live Reactive & Kontrol Transport Proteus
-- **Perhitungan Seketika (Live Reactive)**: Mesin perhitungan Modified Nodal Analysis (MNA) berjalan secara kontinu di latar belakang. Begitu kawat selesai disambungkan ke terminal, komponen digeser, saklar diklik, atau nilai resistor diubah, seluruh tegangan simpul dan display pembacaan instrumen langsung terhitung dan terbarukan seketika tanpa perlu menekan tombol berulang kali.
-- **Transport Bar Proteus**: Terdapat panel kendali simulasi di bawah kanvas dengan tombol **Run** (hijau), **Pause** (kuning), dan **Stop** (merah), disertai indikator LED status dan keterangan mesin solver MNA.
-- **Indikator Titik Logika Tegangan (Logic Dots)**: Saat simulasi aktif, simpul berpotensial positif ditandai titik merah, simpul ground/nol bertitik abu-abu/hijau, dan simpul negatif bertitik biru pada kanvas.
+### 3. Mesin Simulasi Interaktif & Kunci Komponen (Run / Stop Mode)
+- **Mode Desain Bebas (Simulasi OFF)**: Saat simulasi dimatikan (`Stop`), kanvas berada dalam mode pengeditan penuh. Kamu bebas menambah komponen, menarik kawat, memindahkan posisi, memutar, maupun menghapus bagian rangkaian.
+- **Mode Simulasi Berjalan (Simulasi ON)**: Ketika tombol **Run** (▶) ditekan, sistem Modified Nodal Analysis (MNA) aktif dan rangkaian masuk ke status terkunci. Untuk menjaga integritas perhitungan rangkaian nyata, komponen tidak dapat dipindah, diputar, maupun dihapus secara tidak sengaja.
+- **Interaktivitas yang Diizinkan saat Simulasi Aktif**:
+  - **Membuka / Menutup Saklar**: Kamu cukup mengklik langsung saklar di kanvas (atau menekan tombol `Space`) untuk memutus atau menyambungkan aliran listrik secara seketika.
+  - **Mengubah Mode Multimeter**: Selektor mode pengukuran pada multimeter (DCV, DCA, Ohm, ACV) tetap aktif dan langsung memperbarui angka pengukuran.
+  - **Inspeksi Nilai Simpul**: Memilih komponen untuk membaca nilai tegangan simpul dan arus cabang di panel inspeksi tetap dapat dilakukan.
+  - **Navigasi Kanvas**: Menggeser (*pan*) dan memperbesar (*zoom*) tampilan tetap leluasa digunakan.
+- **Menghentikan Simulasi (Stop)**: Menekan tombol **Stop** (⏹) akan membuka kembali kunci kanvas sehingga kamu bisa kembali memodifikasi diagram.
 
-### 4. Saklar Interaktif (Interactive Switch)
+### 4. Visualisasi Aliran Arus Listrik Bergerak (Gaya Falstad)
+- Terinspirasi dari simulator rangkaian Falstad yang intuitif, CircuitLab Web menampilkan partikel-partikel muatan listrik berwarna kuning keemasan yang bergerak mengalir di sepanjang kawat dan menembus komponen.
+- **Arah Gerak Sebenarnya**: Partikel bergerak mengikuti arah arus konvensional sebenarnya hasil perhitungan hukum Kirchhoff (dari potensial tinggi menuju potensial rendah). Jika arah arus berbalik, partikel otomatis berbalik arah.
+- **Kecepatan Sesuai Besar Arus**: Laju gerak partikel sebanding secara dinamis dengan besar arus listrik cabang ($|I|$). Cabang berarus besar akan menampilkan partikel yang melesat lebih cepat, sedangkan cabang berarus kecil bergerak lebih lambat.
+- **Respons Saklar Seketika**: Saat saklar dibuka (OFF), aliran partikel pada cabang tersebut langsung terhenti seketika. Begitu saklar ditutup kembali (ON), partikel kembali mengalir secara mulus.
+- **Tombol Kendali Aliran Arus**: Terdapat tombol *Aliran Arus (ON/OFF)* pada bilah kendali transport di bawah kanvas untuk menampilkan atau menyembunyikan partikel sesuai kenyamanan visual.
+
+### 5. Saklar Interaktif (Interactive Switch)
 - Saklar memiliki dua kondisi visual yang nyata: terbuka (*Open / OFF*) dengan tuas terangkat miring, dan tertutup (*Closed / ON*) dengan tuas terhubung mendatar.
-- Kondisi saklar dapat diubah dengan melakukan klik ganda langsung pada saklar di kanvas, menekan tombol `Space` saat saklar dipilih, atau melalui tombol inspector.
+- Kondisi saklar dapat diubah dengan melakukan klik langsung pada saklar di kanvas saat simulasi berjalan, menekan tombol `Space` saat saklar dipilih, atau melalui tombol inspector.
 - Membuka saklar memutus arus pada cabang tersebut ($I = 0\text{ A}$), sementara menutup saklar mengalirkan kembali arus rangkaian.
 
-### 5. Sambungan Kawat Fleksibel (Draw.io Style)
+### 6. Sambungan Kawat Fleksibel (Draw.io Style)
 - **Koneksi Magnetik Ujung Terminal**: Kawat otomatis mengunci tepat pada ujung pin terminal komponen (bukan di tengah badan komponen).
 - **Kabel Dinamis Mengikuti Komponen**: Kawat yang telah tersambung akan tetap menempel secara kokoh pada kaki komponen. Menggeser resistor atau baterai akan otomatis membuat kawat memanjang atau memendek mengikuti pergeseran tersebut.
 - **Kawat Lengkung (Curved Jumper)**: Memudahkan perapian gambar diagram ketika ada kawat yang menghubungkan simpul jauh atau simpul ground bersama tanpa bersilangan kaku dengan komponen lain. Lengkungan dapat diarahkan melengkung ke atas maupun ke bawah melalui slider inspector, tombol `R`, atau menarik titik kontrol biru pada kawat.
 
-### 6. Pengaturan Posisi dan Rotasi Label Komponen
+### 7. Pengaturan Posisi dan Rotasi Label Komponen
 - Posisi teks nama ($R_1$) dan nilai ($10\ \Omega$) dapat diposisikan ke arah atas, bawah, kiri, atau kanan komponen sesuai kerapian diagram.
 - Teks label juga dapat dirotasi ($0^\circ, 90^\circ, 180^\circ, 270^\circ$) agar tetap tegak terbaca meskipun komponen dipasang dalam posisi vertikal.
 - Seluruh teks tetap terikat secara dinamis pada komponen induknya saat komponen dipindahkan.
 
-### 7. Tipografi Formula LaTeX Alami pada Kanvas
+### 8. Tipografi Formula LaTeX Alami pada Kanvas
 - Penulisan label, nilai besaran, maupun anotasi bebas mendukung format LaTeX dengan penanda `$...$`.
 - Simbol satuan fisika seperti $\Omega$, $\mu\text{F}$, $\text{mH}$, subskrip $V_{in}$, $I_{total}$, hingga persamaan diferensial awal dirender langsung secara vektor pada kanvas sehingga tampak jernih dan tidak mengalami distorsi saat diekspor.
 
-### 8. Penyalinan Cepat ke Dokumen (Word dan Docs)
+### 9. Penyalinan Cepat ke Dokumen (Word dan Docs)
 - **Salin Diagram**: Tombol *Salin Diagram ke Word* menyalin gambar diagram rangkaian format PNG beresolusi tinggi (2x crisp retina) ke clipboard sistem dalam batas gambar yang terpotong otomatis (*auto-crop*). Cukup tekan `Ctrl + V` pada dokumen tugas Microsoft Word atau Google Docs.
 - **Salin Analisis**: Teks rangkuman data komponen, perumusan hukum Kirchhoff I & II, dan pembacaan instrumen ukur dapat disalin langsung ke lembar kerja laporan.
 - **Unduh PNG**: Berkas gambar diagram dapat diunduh ke media penyimpanan komputer.

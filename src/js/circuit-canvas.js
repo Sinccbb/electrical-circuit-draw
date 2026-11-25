@@ -57,11 +57,15 @@ class CircuitCanvas {
     this.onZoomChange = options.onZoomChange || null;
     this.onCurveChange = options.onCurveChange || null;
     this.onSimulationChange = options.onSimulationChange || null;
+    this.onBlockedEdit = options.onBlockedEdit || null;
 
-    // Simulation Engine State (Default: Aktif Live seperti Proteus)
-    this.isSimulating = true;
+    // Simulation Engine State (Default: OFF / Mode Desain Siap Diubah)
+    this.isSimulating = false;
     this.simulationResults = null;
     this.simulationPaused = false;
+    this.showCurrentParticles = true; // Falstad-style current flow visualization
+    this.animTime = 0;
+    this.animFrameId = null;
 
     // Terminal Port Snapping & Wire Dynamic Binding (draw.io style)
     this.wireStartBinding = null;
@@ -213,6 +217,10 @@ class CircuitCanvas {
   }
 
   undo() {
+    if (this.isSimulating) {
+      if (this.onBlockedEdit) this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) untuk membatalkan aksi.');
+      return;
+    }
     if (this.historyIndex > 0) {
       this.historyIndex--;
       const state = JSON.parse(this.history[this.historyIndex]);
@@ -226,6 +234,10 @@ class CircuitCanvas {
   }
 
   redo() {
+    if (this.isSimulating) {
+      if (this.onBlockedEdit) this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) untuk mengulang aksi.');
+      return;
+    }
     if (this.historyIndex < this.history.length - 1) {
       this.historyIndex++;
       const state = JSON.parse(this.history[this.historyIndex]);
@@ -239,6 +251,10 @@ class CircuitCanvas {
   }
 
   clear() {
+    if (this.isSimulating) {
+      if (this.onBlockedEdit) this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) terlebih dahulu.');
+      return;
+    }
     this.elements = [];
     this.wires = [];
     this.selectedItem = null;
@@ -495,6 +511,16 @@ class CircuitCanvas {
   }
 
   setTool(tool) {
+    if (this.isSimulating && tool !== 'select' && tool !== 'pan') {
+      if (this.onBlockedEdit) {
+        this.onBlockedEdit('Simulasi sedang aktif. Hentikan simulasi (Stop) terlebih dahulu untuk menambah atau mengedit komponen.');
+      }
+      this.currentTool = 'select';
+      if (this.onToolChange) this.onToolChange('select');
+      this.updateCursor();
+      return;
+    }
+
     this.currentTool = tool;
     if (this.isDrawingWire) {
       this.isDrawingWire = false;
@@ -558,7 +584,35 @@ class CircuitCanvas {
         return;
       }
 
-      // B. Klik Kiri
+      // KETIKA SIMULASI BERJALAN:
+      // Hanya izinkan Panning, Zooming, Seleksi elemen untuk inspeksi, dan Klik Saklar untuk Buka/Tutup.
+      // DILARANG: Drag/pindah komponen, tarik kawat, letakkan komponen baru.
+      if (this.isSimulating) {
+        if (e.button === 0) {
+          const hit = this.hitTest(worldPos.x, worldPos.y);
+          if (hit) {
+            this.selectedItem = hit;
+            if (hit.type === 'element' && hit.item.type === 'switch') {
+              this.toggleSwitch(hit.item);
+            } else if (this.onSelectionChange) {
+              this.onSelectionChange(this.selectedItem);
+            }
+          } else {
+            // Klik area kosong -> Mulai geser/pan kanvas
+            this.isPanning = true;
+            this.panStart = { x: e.clientX, y: e.clientY };
+            this.initialPan = { x: this.panX, y: this.panY };
+            this.updateCursor();
+          }
+          this.isDragging = false;
+          this.isDraggingCurveHandle = false;
+          this.isDrawingWire = false;
+          this.render();
+        }
+        return;
+      }
+
+      // B. Klik Kiri (Mode Desain / Edit)
       if (e.button === 0) {
         if (this.currentTool === 'select') {
           const hit = this.hitTest(worldPos.x, worldPos.y);
@@ -651,6 +705,18 @@ class CircuitCanvas {
       this.currentMousePos = worldPos;
       this.currentScreenMousePos = screenPos;
       this.isMouseInside = true;
+
+      // Saat simulasi berjalan, hanya izinkan panning
+      if (this.isSimulating) {
+        if (this.isPanning) {
+          const dx = e.clientX - this.panStart.x;
+          const dy = e.clientY - this.panStart.y;
+          this.panX = this.initialPan.x + dx;
+          this.panY = this.initialPan.y + dy;
+          this.render();
+        }
+        return;
+      }
 
       // Update magnet terminal snap target untuk indikator visual
       this.activeSnapTarget = this.getSnapPos(worldPos, (this.selectedItem && this.selectedItem.type === 'element') ? this.selectedItem.item.id : null);
@@ -756,6 +822,43 @@ class CircuitCanvas {
     // 5. Keyboard Events
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        return;
+      }
+
+      // KETIKA SIMULASI BERJALAN:
+      // Hanya izinkan Toggle Saklar (Spacebar) dan Zoom (+, -, 0).
+      // Semua shortcut pengeditan (R, Delete, Panah geser, Undo/Redo) diblokir.
+      if (this.isSimulating) {
+        if (e.code === 'Space') {
+          if (this.selectedItem && this.selectedItem.type === 'element' && this.selectedItem.item.type === 'switch') {
+            e.preventDefault();
+            this.toggleSwitch(this.selectedItem.item);
+            return;
+          }
+          if (!this.spacePressed) {
+            e.preventDefault();
+            this.spacePressed = true;
+            this.updateCursor();
+          }
+          return;
+        }
+
+        if (e.key === '+' || e.key === '=') {
+          if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.zoomIn(); return; }
+        } else if (e.key === '-' || e.key === '_') {
+          if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.zoomOut(); return; }
+        } else if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault(); this.resetView(); return;
+        }
+
+        if (['r', 'R', 'Delete', 'Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) ||
+            (e.ctrlKey && ['z', 'y', 'Z', 'Y'].includes(e.key))) {
+          e.preventDefault();
+          if (this.onBlockedEdit) {
+            this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) untuk mengubah komponen.');
+          }
+          return;
+        }
         return;
       }
 
@@ -885,6 +988,12 @@ class CircuitCanvas {
   }
 
   placeItem(type, x, y) {
+    if (this.isSimulating) {
+      if (this.onBlockedEdit) {
+        this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) untuk menambah komponen.');
+      }
+      return;
+    }
     const id = type + '_' + Date.now();
     let newItem = null;
 
@@ -1072,6 +1181,12 @@ class CircuitCanvas {
   }
 
   rotateSelected() {
+    if (this.isSimulating) {
+      if (this.onBlockedEdit) {
+        this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) untuk memutar komponen.');
+      }
+      return;
+    }
     if (!this.selectedItem) return;
 
     if (this.selectedItem.type === 'element') {
@@ -1107,6 +1222,12 @@ class CircuitCanvas {
   }
 
   deleteSelected() {
+    if (this.isSimulating) {
+      if (this.onBlockedEdit) {
+        this.onBlockedEdit('Rangkaian terkunci saat simulasi berjalan. Hentikan simulasi (Stop) untuk menghapus komponen.');
+      }
+      return;
+    }
     if (!this.selectedItem) return;
     if (this.selectedItem.type === 'element') {
       const elId = this.selectedItem.item.id;
@@ -1438,14 +1559,23 @@ class CircuitCanvas {
       ctx.restore();
     }
 
+    // 8. Falstad Electric Current Particle Animation (Aliran Partikel Muatan Bergerak)
+    if (this.isSimulating && this.simulationResults && this.simulationResults.solved && this.showCurrentParticles) {
+      this.drawCurrentParticles(ctx);
+    }
+
     ctx.restore();
 
-    // 8. Status HUD Simulasi Proteus (di pojok kanvas dalam koordinat layar)
+    // 9. Status HUD Simulasi Proteus (di pojok kanvas dalam koordinat layar)
     if (this.isSimulating) {
       ctx.save();
       const isSolved = this.simulationResults && this.simulationResults.solved;
       const isPaused = this.simulationPaused;
-      const statusText = isPaused ? '⏸ SIMULASI DI-PAUSE' : (isSolved ? '● SIMULASI AKTIF (LIVE PROTEUS)' : '▲ RANGKAIAN TERBUKA / BELUM LENGKAP');
+      const statusText = isPaused 
+        ? '⏸ SIMULASI DI-PAUSE' 
+        : (isSolved 
+            ? '🔒 SIMULASI BERJALAN (RANGKAIAN TERKUNCI) | KLIK SAKLAR UNTUK ON/OFF' 
+            : '▲ RANGKAIAN TERBUKA / BELUM LENGKAP');
       ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       const textW = ctx.measureText(statusText).width;
       const boxW = textW + 20;
@@ -2533,17 +2663,24 @@ class CircuitCanvas {
     if (this.onSelectionChange) this.onSelectionChange(this.selectedItem);
   }
 
-  // --- KONTROL SIMULASI RANGKAIAN LISTRIK (PROTEUS STYLE) ---
+  // --- KONTROL SIMULASI RANGKAIAN LISTRIK (PROTEUS STYLE & FALSTAD FLOW) ---
   startSimulation() {
     this.isSimulating = true;
     this.simulationPaused = false;
     this.runSimulation();
-    if (this.onSimulationChange) this.onSimulationChange(true, this.simulationResults);
+    this.startAnimationLoop();
+    if (this.onSimulationChange) this.onSimulationChange(true, this.simulationResults, false);
     return true;
   }
 
   pauseSimulation() {
+    if (!this.isSimulating) return false;
     this.simulationPaused = !this.simulationPaused;
+    if (this.simulationPaused) {
+      this.stopAnimationLoop();
+    } else {
+      this.startAnimationLoop();
+    }
     this.render();
     if (this.onSimulationChange) this.onSimulationChange(this.isSimulating, this.simulationResults, this.simulationPaused);
     return this.simulationPaused;
@@ -2553,14 +2690,18 @@ class CircuitCanvas {
     this.isSimulating = false;
     this.simulationPaused = false;
     this.simulationResults = null;
+    this.stopAnimationLoop();
     for (const el of this.elements) {
-      if (['multimeter', 'dc_voltmeter', 'ac_voltmeter', 'dc_ammeter', 'ac_ammeter', 'wattmeter'].includes(el.type)) {
+      if (['multimeter', 'dc_voltmeter', 'ac_voltmeter', 'dc_ammeter', 'ac_ammeter', 'wattmeter', 'opamp', 'vcvs', 'vccs'].includes(el.type)) {
         el.displayReading = '--.--';
       }
     }
+    for (const w of this.wires) {
+      w.current = 0;
+    }
     this.render();
     if (this.onCircuitChange) this.onCircuitChange(this);
-    if (this.onSimulationChange) this.onSimulationChange(false, null);
+    if (this.onSimulationChange) this.onSimulationChange(false, null, false);
     return false;
   }
 
@@ -2590,6 +2731,157 @@ class CircuitCanvas {
     if (this.onSimulationChange) {
       this.onSimulationChange(this.isSimulating, this.simulationResults, this.simulationPaused);
     }
+  }
+
+  // --- FALSTAD CURRENT FLOW ANIMATION ENGINE (REQUEST ANIMATION FRAME) ---
+  startAnimationLoop() {
+    if (this.animFrameId) return;
+    if (typeof requestAnimationFrame === 'undefined') return;
+
+    let lastTime = performance.now();
+    const loop = (now) => {
+      const dt = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+      if (this.isSimulating && !this.simulationPaused) {
+        this.animTime += dt;
+        this.render();
+        this.animFrameId = requestAnimationFrame(loop);
+      } else {
+        this.animFrameId = null;
+      }
+    };
+    this.animFrameId = requestAnimationFrame(loop);
+  }
+
+  stopAnimationLoop() {
+    if (this.animFrameId && typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+  }
+
+  /**
+   * Menggambar partikel muatan listrik yang mengalir di sepanjang kawat dan di dalam komponen,
+   * terinspirasi langsung dari simulator Falstad. Arah dan kecepatan partikel sebanding dengan arus cabang.
+   */
+  drawCurrentParticles(ctx) {
+    ctx.save();
+
+    // 1. Partikel pada semua kawat
+    for (const wire of this.wires) {
+      const iCur = wire.current || 0;
+      if (Math.abs(iCur) < 1e-5) continue; // Arus nol / terbuka
+
+      // Kecepatan partikel (pixels per second)
+      const sign = iCur > 0 ? 1 : -1;
+      const mag = Math.abs(iCur);
+      const speed = sign * Math.min(95, 22 + 26 * Math.log10(1 + mag * 500));
+      const dotSpacing = 18;
+
+      if (wire.curved) {
+        const cp = this.getCurveControlPoint(wire);
+        const chord = Math.hypot(wire.x2 - wire.x1, wire.y2 - wire.y1);
+        const contNet = Math.hypot(cp.x - wire.x1, cp.y - wire.y1) + Math.hypot(wire.x2 - cp.x, wire.y2 - cp.y);
+        const len = (chord + contNet) / 2;
+        if (len < 4) continue;
+
+        const count = Math.max(1, Math.round(len / dotSpacing));
+        const spacing = len / count;
+        let offset = ((this.animTime || 0) * speed) % spacing;
+        if (offset < 0) offset += spacing;
+
+        for (let k = 0; k < count; k++) {
+          const s = (k * spacing + offset) % len;
+          const t = s / len;
+          const px = (1 - t) * (1 - t) * wire.x1 + 2 * (1 - t) * t * cp.x + t * t * wire.x2;
+          const py = (1 - t) * (1 - t) * wire.y1 + 2 * (1 - t) * t * cp.y + t * t * wire.y2;
+          this.drawSingleParticle(ctx, px, py);
+        }
+      } else {
+        const dx = wire.x2 - wire.x1;
+        const dy = wire.y2 - wire.y1;
+        const len = Math.hypot(dx, dy);
+        if (len < 4) continue;
+
+        const count = Math.max(1, Math.round(len / dotSpacing));
+        const spacing = len / count;
+        let offset = ((this.animTime || 0) * speed) % spacing;
+        if (offset < 0) offset += spacing;
+
+        for (let k = 0; k < count; k++) {
+          const s = (k * spacing + offset) % len;
+          const t = s / len;
+          const px = wire.x1 + t * dx;
+          const py = wire.y1 + t * dy;
+          this.drawSingleParticle(ctx, px, py);
+        }
+      }
+    }
+
+    // 2. Partikel mengalir di dalam komponen (Resistor, Saklar ON, Baterai, Ammeter)
+    for (const el of this.elements) {
+      if (['text', 'current_arrow', 'mesh_loop', 'polarity', 'node_label'].includes(el.type)) continue;
+      const elRes = this.simulationResults.elements ? this.simulationResults.elements.get(el.id) : null;
+      if (!elRes) continue;
+      const iCur = elRes.current || 0;
+      if (Math.abs(iCur) < 1e-5) continue;
+
+      const terms = this.getTerminals(el);
+      if (terms.length < 2) continue;
+
+      let pStart = terms[0];
+      let pEnd = terms[1];
+      let flowSign = 1;
+
+      if (el.type === 'vsource_dc') {
+        // Di dalam baterai: arus mengalir dari kutub (-) terms[1] ke kutub (+) terms[0]
+        pStart = terms[1];
+        pEnd = terms[0];
+        flowSign = 1;
+      } else if (['resistor', 'switch', 'dc_ammeter', 'ac_ammeter'].includes(el.type)) {
+        if (el.type === 'switch' && !(el.closed || el.value === 'Closed')) continue;
+        pStart = terms[0];
+        pEnd = terms[1];
+        flowSign = iCur > 0 ? 1 : -1;
+      } else {
+        continue;
+      }
+
+      const dx = pEnd.x - pStart.x;
+      const dy = pEnd.y - pStart.y;
+      const len = Math.hypot(dx, dy);
+      if (len < 4) continue;
+
+      const speed = flowSign * Math.min(95, 22 + 26 * Math.log10(1 + Math.abs(iCur) * 500));
+      const dotSpacing = 16;
+      const count = Math.max(1, Math.round(len / dotSpacing));
+      const spacing = len / count;
+      let offset = ((this.animTime || 0) * speed) % spacing;
+      if (offset < 0) offset += spacing;
+
+      for (let k = 0; k < count; k++) {
+        const s = (k * spacing + offset) % len;
+        const t = s / len;
+        const px = pStart.x + t * dx;
+        const py = pStart.y + t * dy;
+        this.drawSingleParticle(ctx, px, py);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  drawSingleParticle(ctx, x, y) {
+    // Falstad-style glowing amber charge packet
+    ctx.beginPath();
+    ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, y, 1.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fef08a';
+    ctx.fill();
   }
 }
 

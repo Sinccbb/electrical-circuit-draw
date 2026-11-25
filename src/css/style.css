@@ -550,6 +550,31 @@ body {
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
 }
 
+.btn-transport.particle {
+  background: #451a03;
+  border-color: #b45309;
+  color: #fde68a;
+  margin-left: 6px;
+}
+.btn-transport.particle:hover, .btn-transport.particle.active {
+  background: #d97706;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+/* Toolbar Locked State when Simulation is Running */
+.toolbar-container.sim-locked {
+  background: #f8fafc;
+  border-bottom: 2px solid #10b981;
+  position: relative;
+}
+
+.toolbar-container.sim-locked .btn-tool:not([data-tool="select"]):not([data-tool="pan"]) {
+  opacity: 0.42;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .transport-status {
   display: flex;
   align-items: center;
